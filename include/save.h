@@ -276,6 +276,8 @@ typedef struct SaveInfo {
     /* 0x1336  0x1352 */ Checksum checksum; // "check_sum"
 } SaveInfo;
 
+#define ICE_WORLD 0
+#define FIRE_WORLD 1
 typedef struct Save {
     /* 0x00 */ s32 entranceIndex;
     /* 0x04 */ s32 linkAge; // 0: Adult; 1: Child (see enum `LinkAge`)
@@ -286,6 +288,7 @@ typedef struct Save {
     /* 0x18 */ s32 bgsDayCount; // increments with totalDays, can be cleared with `Environment_ClearBgsDayCount`
     /* 0x1C */ SaveInfo info; // "information"
     u8 useWidescreen;
+    u8 world;
 } Save;
 
 typedef struct SaveContext {

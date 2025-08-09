@@ -5123,3 +5123,19 @@ beginseg
     number 3
 endseg
 #endif
+
+beginseg
+    name "hm_jam_dung_scene"
+    compress
+    romalign 0x1000
+    include "$(BUILD_DIR)/assets/scenes/hm_jam_dung/hm_jam_dung_scene.o"
+    number 2
+endseg
+
+beginseg
+    name "hm_jam_dung_room_0"
+    compress
+    romalign 0x1000
+    include "$(BUILD_DIR)/assets/scenes/hm_jam_dung/hm_jam_dung_room_0.o"
+    number 3
+endseg

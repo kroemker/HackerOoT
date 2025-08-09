@@ -12,7 +12,7 @@
 
 /**
  * Enables HackerOoT debugger
-*/
+ */
 #define ENABLE_HACKER_DEBUG true
 
 /**
@@ -28,19 +28,19 @@
 /**
  * Options for booting directly into a scene, the debug boot or the file select, instead of the title screen.
  */
-#define BOOT_TO_SCENE false
+#define BOOT_TO_SCENE true
 #define BOOT_TO_SCENE_NEW_GAME_ONLY false
 #define BOOT_TO_FILE_SELECT false
-#define BOOT_TO_DEBUG_OPENING true
+#define BOOT_TO_DEBUG_OPENING false
 
 /**
  * Use file 1 to load the map select from the file select
  * Note: using this will automatically enable the map select
-*/
+ */
 #define MAP_SELECT_ON_FILE_1 false
 
 // Change these if using `BOOT_TO_SCENE`, `BOOT_TO_SCENE_NEW_GAME_ONLY` or `BOOT_TO_DEBUG_OPENING`
-#define BOOT_ENTRANCE ENTR_EXAMPLE_0
+#define BOOT_ENTRANCE ENTR_HM_JAM_DUNG_0
 #define BOOT_AGE LINK_AGE_ADULT
 #define BOOT_CUTSCENE 0x0000
 
@@ -61,22 +61,22 @@
 
 /**
  * Disable autoscroll on crash debugger
-*/
+ */
 #define DISABLE_CRASH_DBG_AUTOSCROLL true
 
 /**
  * Enable DMA print at boot
-*/
+ */
 #define ENABLE_DMA_PRINTF false
 
 /**
  * Include example scene
-*/
+ */
 #define INCLUDE_EXAMPLE_SCENE true
 
 /**
  * Enable motion blur debug
-*/
+ */
 #define ENABLE_MOTION_BLUR_DEBUG false
 
 /**

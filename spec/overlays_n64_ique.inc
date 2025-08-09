@@ -1643,6 +1643,20 @@ beginseg
 endseg
 
 beginseg
+    name "ovl_Arrow_Portal"
+    compress
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Arrow_Portal/z_arrow_portal.o"
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Arrow_Portal/ovl_Arrow_Portal_reloc.o"
+endseg
+
+beginseg
+    name "ovl_Portal"
+    compress
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Portal/z_portal.o"
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Portal/ovl_Portal_reloc.o"
+endseg
+
+beginseg
     name "ovl_Obj_Kibako"
     compress
     include "$(BUILD_DIR)/src/overlays/actors/ovl_Obj_Kibako/z_obj_kibako.o"

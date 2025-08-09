@@ -75,8 +75,7 @@ typedef struct GetItemEntry {
 #define CHEST_ANIM_SHORT 0
 #define CHEST_ANIM_LONG 1
 
-#define GET_ITEM_NONE \
-    { ITEM_NONE, 0, 0, 0, OBJECT_INVALID }
+#define GET_ITEM_NONE { ITEM_NONE, 0, 0, 0, OBJECT_INVALID }
 
 typedef struct ExplosiveInfo {
     /* 0x00 */ u8 itemId;
@@ -115,10 +114,10 @@ typedef enum AnimSfxType {
 
 #define ANIMSFX_SHIFT_TYPE(type) ((type) << 11)
 
-#define ANIMSFX_DATA(type, frame) ((ANIMSFX_SHIFT_TYPE(type) | ((frame)&0x7FF)))
+#define ANIMSFX_DATA(type, frame) ((ANIMSFX_SHIFT_TYPE(type) | ((frame) & 0x7FF)))
 
-#define ANIMSFX_GET_TYPE(data) ((data)&0x7800)
-#define ANIMSFX_GET_FRAME(data) ((data)&0x7FF)
+#define ANIMSFX_GET_TYPE(data) ((data) & 0x7800)
+#define ANIMSFX_GET_FRAME(data) ((data) & 0x7FF)
 
 typedef struct AnimSfxEntry {
     /* 0x00 */ u16 sfxId;
@@ -183,6 +182,7 @@ s32 func_808358F0(Player* this, PlayState* play);
 s32 func_808359FC(Player* this, PlayState* play);
 s32 func_80835B60(Player* this, PlayState* play);
 s32 func_80835C08(Player* this, PlayState* play);
+s32 Player_CheckChangeArrowType(PlayState* play, Player* this);
 
 void Player_UseItem(PlayState* play, Player* this, s32 item);
 void func_80839F90(Player* this, PlayState* play);
@@ -2447,7 +2447,7 @@ void Player_InitExplosiveIA(PlayState* play, Player* this) {
                 play->bombchuBowlingStatus = -1;
             }
         } else {
-            Inventory_ChangeAmmo(explosiveInfo->itemId, -1);
+            // Inventory_ChangeAmmo(explosiveInfo->itemId, -1);
         }
 
         this->interactRangeActor = spawnedActor;
@@ -2794,38 +2794,26 @@ s32 func_8083442C(Player* this, PlayState* play) {
     s32 arrowType;
     s32 magicArrowType;
 
-    if ((this->heldItemAction >= PLAYER_IA_BOW_FIRE) && (this->heldItemAction <= PLAYER_IA_BOW_0E) &&
-        (gSaveContext.magicState != MAGIC_STATE_IDLE)) {
-        Sfx_PlaySfxCentered(NA_SE_SY_ERROR);
-    } else {
-        Player_SetUpperActionFunc(this, func_808351D4);
+    Player_SetUpperActionFunc(this, func_808351D4);
 
-        this->stateFlags1 |= PLAYER_STATE1_9;
-        this->unk_834 = 14;
+    this->stateFlags1 |= PLAYER_STATE1_9;
+    this->unk_834 = 14;
 
-        if (this->unk_860 >= 0) {
-            Player_PlaySfx(this, D_80854398[ABS(this->unk_860) - 1]);
+    if (this->unk_860 >= 0) {
+        Player_PlaySfx(this, D_80854398[ABS(this->unk_860) - 1]);
 
-            if (!Player_HoldsHookshot(this) && (func_80834380(play, this, &item, &arrowType) > 0)) {
-                magicArrowType = arrowType - ARROW_FIRE;
+        if (!Player_HoldsHookshot(this) && (func_80834380(play, this, &item, &arrowType) > 0)) {
+            magicArrowType = arrowType - ARROW_FIRE;
 
-                if (this->unk_860 >= 0) {
-                    if ((magicArrowType >= 0) && (magicArrowType <= 2) &&
-                        !Magic_RequestChange(play, sMagicArrowCosts[magicArrowType], MAGIC_CONSUME_NOW)) {
-                        arrowType = ARROW_NORMAL;
-                    }
-
-                    this->heldActor = Actor_SpawnAsChild(
-                        &play->actorCtx, &this->actor, play, ACTOR_EN_ARROW, this->actor.world.pos.x,
-                        this->actor.world.pos.y, this->actor.world.pos.z, 0, this->actor.shape.rot.y, 0, arrowType);
-                }
+            if (this->unk_860 >= 0) {
+                this->heldActor = Actor_SpawnAsChild(&play->actorCtx, &this->actor, play, ACTOR_EN_ARROW,
+                                                     this->actor.world.pos.x, this->actor.world.pos.y,
+                                                     this->actor.world.pos.z, 0, this->actor.shape.rot.y, 0, arrowType);
             }
         }
-
-        return 1;
     }
 
-    return 0;
+    return 1;
 }
 
 void Player_FinishItemChange(PlayState* play, Player* this) {
@@ -2875,6 +2863,7 @@ s32 func_80834758(PlayState* play, Player* this) {
 
     if (!(this->stateFlags1 & (PLAYER_STATE1_SHIELDING | PLAYER_STATE1_23 | PLAYER_STATE1_29)) &&
         (play->shootingGalleryStatus == 0) && (this->heldItemAction == this->itemAction) &&
+        !(this->heldItemAction >= PLAYER_IA_BOW && this->heldItemAction <= PLAYER_IA_BOW_0E) &&
         (this->currentShield != PLAYER_SHIELD_NONE) && !Player_IsChildWithHylianShield(this) &&
         Player_IsZTargeting(this) && CHECK_BTN_ALL(sControlInput->cur.button, BTN_R)) {
 
@@ -3116,7 +3105,7 @@ s32 func_808350A4(PlayState* play, Player* this) {
             } else if (play->shootingGalleryStatus != 0) {
                 play->shootingGalleryStatus--;
             } else {
-                Inventory_ChangeAmmo(item, -1);
+                // Inventory_ChangeAmmo(item, -1);
             }
 
             if (play->shootingGalleryStatus == 1) {
@@ -3141,8 +3130,31 @@ s32 func_808350A4(PlayState* play, Player* this) {
 
 static u16 D_808543DC[] = { NA_SE_IT_BOW_FLICK, NA_SE_IT_SLING_FLICK };
 
+static u8 sBowItemsForAction[] = { ITEM_BOW, ITEM_BOW_FIRE, ITEM_BOW_ICE, ITEM_BOW_PORTAL };
+
+s32 Player_CheckChangeArrowType(PlayState* play, Player* this) {
+    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_R) && this->heldItemAction >= PLAYER_IA_BOW &&
+        this->heldItemAction <= PLAYER_IA_BOW_PORTAL) {
+        this->itemAction = this->heldItemAction = PLAYER_IA_BOW + (this->heldItemAction - PLAYER_IA_BOW + 1) % 4;
+        this->heldItemId = gSaveContext.save.info.equips.buttonItems[this->heldItemButton] =
+            sBowItemsForAction[this->heldItemAction - PLAYER_IA_BOW];
+        Interface_LoadItemIcon1(play, this->heldItemButton);
+        return 1;
+    }
+    return 0;
+}
+
 s32 func_808351D4(Player* this, PlayState* play) {
     s32 sp2C;
+
+    if (Player_CheckChangeArrowType(play, this)) {
+        if (this->heldActor != NULL) {
+            Actor_Kill(this->heldActor);
+        }
+        func_8083442C(this, play);
+        LinkAnimation_PlayOnce(play, &this->upperSkelAnime, &gPlayerAnim_link_bow_bow_shoot_next);
+        return 1;
+    }
 
     if (!Player_HoldsHookshot(this)) {
         sp2C = 0;
@@ -3196,6 +3208,8 @@ s32 func_808353D8(Player* this, PlayState* play) {
     if (Player_HoldsHookshot(this) && !func_80834FBC(this)) {
         return true;
     }
+
+    Player_CheckChangeArrowType(play, this);
 
     if (!func_80834758(play, this) &&
         (sUseHeldItem || ((this->unk_860 < 0) && sHeldItemButtonIsHeldDown) || func_80834E44(play))) {
@@ -12588,7 +12602,7 @@ void Player_Action_8084B1D8(Player* this, PlayState* play) {
         Player_UpdateHostileLockOn(this) || (this->focusActor != NULL) ||
         (func_8083AD4C(play, this) == CAM_MODE_NORMAL) ||
         (((this->unk_6AD == 2) &&
-          (CHECK_BTN_ANY(sControlInput->press.button, BTN_A | BTN_B | BTN_R) || Player_FriendlyLockOnOrParallel(this) ||
+          (CHECK_BTN_ANY(sControlInput->press.button, BTN_A | BTN_B) || Player_FriendlyLockOnOrParallel(this) ||
            (!func_8002DD78(this) && !func_808334B4(this)))) ||
          ((this->unk_6AD == 1) &&
           CHECK_BTN_ANY(sControlInput->press.button,

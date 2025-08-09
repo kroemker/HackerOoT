@@ -3359,8 +3359,7 @@ void Interface_DrawAmmoCount(PlayState* play, s16 button, s16 alpha) {
 
     i = gSaveContext.save.info.equips.buttonItems[button];
 
-    if ((i == ITEM_DEKU_STICK) || (i == ITEM_DEKU_NUT) || (i == ITEM_BOMB) || (i == ITEM_BOW) ||
-        ((i >= ITEM_BOW_FIRE) && (i <= ITEM_BOW_LIGHT)) || (i == ITEM_SLINGSHOT) || (i == ITEM_BOMBCHU) ||
+    if ((i == ITEM_DEKU_STICK) || (i == ITEM_DEKU_NUT) || (i == ITEM_SLINGSHOT) || (i == ITEM_BOMBCHU) ||
         (i == ITEM_MAGIC_BEAN)) {
 
         if ((i >= ITEM_BOW_FIRE) && (i <= ITEM_BOW_LIGHT)) {

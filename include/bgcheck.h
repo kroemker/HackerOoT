@@ -486,4 +486,6 @@ s32 DynaPolyActor_IsPlayerAbove(struct DynaPolyActor* dynaActor);
 s32 DynaPolyActor_IsSwitchPressed(struct DynaPolyActor* dynaActor);
 s32 func_800435D8(struct PlayState* play, struct DynaPolyActor* dynaActor, s16 arg2, s16 arg3, s16 arg4);
 
+void CollisionPoly_GetNormalF(CollisionPoly* poly, f32* nx, f32* ny, f32* nz);
+
 #endif

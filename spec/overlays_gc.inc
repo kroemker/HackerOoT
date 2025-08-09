@@ -27,6 +27,20 @@ beginseg
 endseg
 
 beginseg
+    name "ovl_Arrow_Portal"
+    compress
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Arrow_Portal/z_arrow_portal.o"
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Arrow_Portal/ovl_Arrow_Portal_reloc.o"
+endseg
+
+beginseg
+    name "ovl_Portal"
+    compress
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Portal/z_portal.o"
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Portal/ovl_Portal_reloc.o"
+endseg
+
+beginseg
     name "ovl_Bg_Bdan_Objects"
     compress
     include "$(BUILD_DIR)/src/overlays/actors/ovl_Bg_Bdan_Objects/z_bg_bdan_objects.o"

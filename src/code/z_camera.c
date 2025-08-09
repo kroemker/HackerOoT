@@ -73,7 +73,7 @@ s32 Camera_QRegInit(void);
  * runtime. If a small f32 is being stored as an s16, it is common to store that value 100 times larger than the
  * original value. This is then scaled back down during runtime with the CAM_DATA_SCALED macro.
  */
-#define CAM_DATA_SCALED(x) ((x)*0.01f)
+#define CAM_DATA_SCALED(x) ((x) * 0.01f)
 
 // Load the next value from camera read-only data stored in CameraModeValue
 #define GET_NEXT_RO_DATA(values) ((values++)->val)
@@ -8588,7 +8588,7 @@ s16 Camera_RequestSettingImpl(Camera* camera, s16 requestedSetting, s16 flags) {
     }
 
     if ((requestedSetting == CAM_SET_NONE) || (requestedSetting >= CAM_SET_MAX)) {
-        PRINTF(VT_COL(RED, WHITE) "camera: error: illegal camera set (%d) !!!!\n" VT_RST, requestedSetting);
+        // PRINTF(VT_COL(RED, WHITE) "camera: error: illegal camera set (%d) !!!!\n" VT_RST, requestedSetting);
         return -99;
     }
 

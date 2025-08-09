@@ -113,7 +113,7 @@ typedef enum QuestItem {
     /* 0x15 */ QUEST_STONE_OF_AGONY,
     /* 0x16 */ QUEST_GERUDOS_CARD,
     /* 0x17 */ QUEST_SKULL_TOKEN,
-    /* 0x18 */ QUEST_HEART_PIECE, // for `pauseCtx->cursorPoint[PAUSE_QUEST]`
+    /* 0x18 */ QUEST_HEART_PIECE,             // for `pauseCtx->cursorPoint[PAUSE_QUEST]`
     /* 0x1C */ QUEST_HEART_PIECE_COUNT = 0x1C // for accessing the `Inventory.questItems` bitfield
 } QuestItem;
 
@@ -171,6 +171,7 @@ typedef enum ItemID {
     /* 0x10 */ ITEM_MAGIC_BEAN,
     /* 0x11 */ ITEM_HAMMER,
     /* 0x12 */ ITEM_ARROW_LIGHT,
+    ITEM_ARROW_PORTAL = 0x12,
     /* 0x13 */ ITEM_NAYRUS_LOVE,
     /* 0x14 */ ITEM_BOTTLE_EMPTY,
     /* 0x15 */ ITEM_BOTTLE_POTION_RED,
@@ -211,6 +212,7 @@ typedef enum ItemID {
     /* 0x38 */ ITEM_BOW_FIRE,
     /* 0x39 */ ITEM_BOW_ICE,
     /* 0x3A */ ITEM_BOW_LIGHT,
+    ITEM_BOW_PORTAL = 0x3A,
     /* 0x3B */ ITEM_SWORD_KOKIRI,
     /* 0x3C */ ITEM_SWORD_MASTER,
     /* 0x3D */ ITEM_SWORD_BIGGORON,
@@ -393,7 +395,7 @@ typedef enum GetItemID {
     /* 0x48 */ GI_RECOVERY_HEART,
     /* 0x49 */ GI_ARROWS_5,  // amount changes depending on context
     /* 0x4A */ GI_ARROWS_10, // amount changes depending on context
-    /* 0x4B */ GI_ARROWS_30,  // amount changes depending on context
+    /* 0x4B */ GI_ARROWS_30, // amount changes depending on context
     /* 0x4C */ GI_RUPEE_GREEN,
     /* 0x4D */ GI_RUPEE_BLUE,
     /* 0x4E */ GI_RUPEE_RED,
@@ -443,7 +445,7 @@ typedef enum GetItemID {
     /* 0x7A */ GI_DEKU_NUT_UPGRADE_40,
     /* 0x7B */ GI_BULLET_BAG_50,
     /* 0x7C */ GI_ICE_TRAP, // freezes link when opened from a chest
-    /* 0x7D */ GI_TEXT_0, // no model appears over Link, shows text id 0 (pocket egg)
+    /* 0x7D */ GI_TEXT_0,   // no model appears over Link, shows text id 0 (pocket egg)
     /* 0x7E */ GI_MAX
 } GetItemID;
 

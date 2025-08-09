@@ -19,7 +19,11 @@
 #include "z_lib.h"
 #include "effect.h"
 #include "play_state.h"
+#include "bgcheck.h"
+#include "save.h"
+#include "printf.h"
 
+#include "../ovl_Portal/z_portal.h"
 #include "assets/objects/gameplay_keep/gameplay_keep.h"
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
@@ -91,6 +95,10 @@ void EnArrow_Init(Actor* thisx, PlayState* play) {
         0, 4, 0, { 0, 255, 200, 255 },   { 0, 255, 255, 255 }, { 0, 255, 200, 0 }, { 0, 255, 255, 0 }, 16,
         0, 1, 0, { 255, 255, 170, 255 }, { 255, 255, 0, 0 },
     };
+    static EffectBlureInit2 blurePortal = {
+        0, 4, 0, { 0, 255, 200, 255 },   { 0, 255, 255, 255 }, { 0, 255, 200, 0 }, { 0, 255, 255, 0 }, 16,
+        0, 1, 0, { 255, 170, 255, 255 }, { 255, 0, 255, 0 },
+    };
     static u32 dmgFlags[] = {
         DMG_ARROW_FIRE,  DMG_ARROW_NORMAL, DMG_ARROW_NORMAL, DMG_ARROW_FIRE, DMG_ARROW_ICE,
         DMG_ARROW_LIGHT, DMG_ARROW_UNK3,   DMG_ARROW_UNK1,   DMG_ARROW_UNK2, DMG_SLINGSHOT,
@@ -127,9 +135,12 @@ void EnArrow_Init(Actor* thisx, PlayState* play) {
 
             Effect_Add(play, &this->effectIndex, EFFECT_BLURE2, 0, 0, &blureIce);
 
-        } else if (this->actor.params == ARROW_LIGHT) {
+            // } else if (this->actor.params == ARROW_LIGHT) {
 
-            Effect_Add(play, &this->effectIndex, EFFECT_BLURE2, 0, 0, &blureLight);
+            //     Effect_Add(play, &this->effectIndex, EFFECT_BLURE2, 0, 0, &blureLight);
+        } else if (this->actor.params == ARROW_PORTAL) {
+
+            Effect_Add(play, &this->effectIndex, EFFECT_BLURE2, 0, 0, &blurePortal);
         }
 
         Collider_InitQuad(play, &this->collider);
@@ -155,7 +166,7 @@ void EnArrow_Init(Actor* thisx, PlayState* play) {
 void EnArrow_Destroy(Actor* thisx, PlayState* play) {
     EnArrow* this = (EnArrow*)thisx;
 
-    if (this->actor.params <= ARROW_LIGHT) {
+    if (this->actor.params <= ARROW_PORTAL) {
         Effect_Delete(play, this->effectIndex);
     }
 
@@ -189,7 +200,8 @@ void EnArrow_Shoot(EnArrow* this, PlayState* play) {
 
             case ARROW_FIRE:
             case ARROW_ICE:
-            case ARROW_LIGHT:
+            // case ARROW_LIGHT:
+            case ARROW_PORTAL:
                 Player_PlaySfx(player, NA_SE_IT_MAGIC_ARROW_SHOT);
                 break;
         }
@@ -323,6 +335,39 @@ void EnArrow_Fly(EnArrow* this, PlayState* play) {
                     Actor_PlaySfx(&this->actor, NA_SE_IT_ARROW_STICK_CRE);
                 }
             } else if (this->touchedPoly) {
+                if (this->actor.params == ARROW_PORTAL) {
+                    Vec3f normal;
+                    f32 dist = 5;
+                    s16 xRot, yRot, zRot;
+                    CollisionPoly_GetNormalF(this->actor.wallPoly, &normal.x, &normal.y, &normal.z);
+
+                    if (normal.x == 0 && normal.y == 1.0f && normal.z == 0) {
+                        xRot = 0x4000;
+                        yRot = 0;
+                        zRot = 0;
+                    } else if (normal.x == 0 && normal.y == -1.0f && normal.z == 0) {
+                        xRot = 0xC000;
+                        yRot = 0;
+                        zRot = 0;
+                    } else {
+                        xRot = 0;
+                        yRot = Math_Atan2S(normal.z, normal.x) + 0x8000;
+                        zRot = Math_Atan2S(-normal.y, sqrt(SQ(normal.x) + SQ(normal.z)));
+                    }
+
+                    PRINTF("Portal Arrow: Hit poly: normal=(%.2f, %.2f, %.2f), rot=(%04X, %04X, %04X)\n", normal.x,
+                           normal.y, normal.z, xRot, yRot, zRot);
+
+                    Sfx_PlaySfxAtPos(&this->actor.world.pos, NA_SE_IT_DM_RING_EXPLOSION);
+                    Portal* portal = (Portal*)Actor_Spawn(
+                        &play->actorCtx, play, ACTOR_PORTAL, this->actor.world.pos.x + normal.x * dist,
+                        this->actor.world.pos.y + normal.y * dist, this->actor.world.pos.z + normal.z * dist, xRot,
+                        yRot, zRot, gSaveContext.save.world);
+                    Math_Vec3f_Copy(&portal->wallNormal, &normal);
+                    Actor_Kill(&this->actor);
+                    return;
+                }
+
                 EnArrow_SetupAction(this, func_809B45E0);
                 Animation_PlayOnce(&this->skelAnime, &gArrow2Anim);
 
@@ -411,8 +456,8 @@ void EnArrow_Update(Actor* thisx, PlayState* play) {
     }
 
     if ((this->actor.params >= ARROW_FIRE) && (this->actor.params <= ARROW_0E)) {
-        s16 elementalActorIds[] = { ACTOR_ARROW_FIRE, ACTOR_ARROW_ICE,  ACTOR_ARROW_LIGHT,
-                                    ACTOR_ARROW_FIRE, ACTOR_ARROW_FIRE, ACTOR_ARROW_FIRE };
+        s16 elementalActorIds[] = { ACTOR_ARROW_FIRE,   ACTOR_ARROW_ICE,  ACTOR_ARROW_PORTAL,
+                                    ACTOR_ARROW_PORTAL, ACTOR_ARROW_FIRE, ACTOR_ARROW_FIRE };
 
         if (this->actor.child == NULL) {
             Actor_SpawnAsChild(&play->actorCtx, &this->actor, play, elementalActorIds[this->actor.params - 3],

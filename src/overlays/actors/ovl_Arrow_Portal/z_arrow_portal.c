@@ -1,10 +1,4 @@
-/*
- * File: z_arrow_light.c
- * Overlay: ovl_Arrow_Light
- * Description: Light Arrow. Spawned as a child of a normal arrow.
- */
-
-#include "z_arrow_light.h"
+#include "z_arrow_portal.h"
 #include "overlays/actors/ovl_En_Arrow/z_en_arrow.h"
 
 #include "gfx.h"
@@ -19,25 +13,27 @@
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
 
-void ArrowLight_Init(Actor* thisx, PlayState* play);
-void ArrowLight_Destroy(Actor* thisx, PlayState* play);
-void ArrowLight_Update(Actor* thisx, PlayState* play);
-void ArrowLight_Draw(Actor* thisx, PlayState* play);
+void ArrowPortal_Init(Actor* thisx, PlayState* play);
+void ArrowPortal_Destroy(Actor* thisx, PlayState* play);
+void ArrowPortal_Update(Actor* thisx, PlayState* play);
+void ArrowPortal_Draw(Actor* thisx, PlayState* play);
 
-void ArrowLight_Charge(ArrowLight* this, PlayState* play);
-void ArrowLight_Fly(ArrowLight* this, PlayState* play);
-void ArrowLight_Hit(ArrowLight* this, PlayState* play);
+void ArrowPortal_Charge(ArrowPortal* this, PlayState* play);
+void ArrowPortal_Fly(ArrowPortal* this, PlayState* play);
+void ArrowPortal_Hit(ArrowPortal* this, PlayState* play);
 
-#define s1Tex_WIDTH 32
-#define s1Tex_HEIGHT 64
+#define s1Tex_WIDTH 64
+#define s1Tex_HEIGHT 32
 static u64 s1Tex[TEX_LEN(u64, s1Tex_WIDTH, s1Tex_HEIGHT, 8)] = {
 #include "assets/overlays/ovl_Arrow_Light/s1Tex.i8.inc.c"
+    // #include "assets/overlays/ovl_Arrow_Ice/s1Tex.i8.inc.c"
 };
 
-#define s2Tex_WIDTH 32
-#define s2Tex_HEIGHT 64
+#define s2Tex_WIDTH 64
+#define s2Tex_HEIGHT 32
 static u64 s2Tex[TEX_LEN(u64, s2Tex_WIDTH, s2Tex_HEIGHT, 8)] = {
-#include "assets/overlays/ovl_Arrow_Light/s2Tex.i8.inc.c"
+// #include "assets/overlays/ovl_Arrow_Light/s2Tex.i8.inc.c"
+#include "assets/overlays/ovl_Arrow_Fire/s2Tex.i8.inc.c"
 };
 
 static Vtx sVtx[] = {
@@ -52,45 +48,45 @@ static Gfx sModelDL[24] = {
 #include "assets/overlays/ovl_Arrow_Light/sModelDL.inc.c"
 };
 
-ActorProfile Arrow_Light_Profile = {
-    /**/ ACTOR_ARROW_LIGHT,
+ActorProfile Arrow_Portal_Profile = {
+    /**/ ACTOR_ARROW_PORTAL,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
     /**/ OBJECT_GAMEPLAY_KEEP,
-    /**/ sizeof(ArrowLight),
-    /**/ ArrowLight_Init,
-    /**/ ArrowLight_Destroy,
-    /**/ ArrowLight_Update,
-    /**/ ArrowLight_Draw,
+    /**/ sizeof(ArrowPortal),
+    /**/ ArrowPortal_Init,
+    /**/ ArrowPortal_Destroy,
+    /**/ ArrowPortal_Update,
+    /**/ ArrowPortal_Draw,
 };
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_F32(cullingVolumeDistance, 2000, ICHAIN_STOP),
 };
 
-void ArrowLight_SetupAction(ArrowLight* this, ArrowLightActionFunc actionFunc) {
+void ArrowPortal_SetupAction(ArrowPortal* this, ArrowPortalActionFunc actionFunc) {
     this->actionFunc = actionFunc;
 }
 
-void ArrowLight_Init(Actor* thisx, PlayState* play) {
-    ArrowLight* this = (ArrowLight*)thisx;
+void ArrowPortal_Init(Actor* thisx, PlayState* play) {
+    ArrowPortal* this = (ArrowPortal*)thisx;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     this->radius = 0;
     this->unk_160 = 1.0f;
-    ArrowLight_SetupAction(this, ArrowLight_Charge);
+    ArrowPortal_SetupAction(this, ArrowPortal_Charge);
     Actor_SetScale(&this->actor, 0.01f);
     this->alpha = 130;
     this->timer = 0;
     this->unk_164 = 0.0f;
 }
 
-void ArrowLight_Destroy(Actor* thisx, PlayState* play) {
+void ArrowPortal_Destroy(Actor* thisx, PlayState* play) {
     Magic_Reset(play);
-    LOG_STRING_T("消滅", "Disappearance", "../z_arrow_light.c", 403);
+    LOG_STRING_T("消滅", "Disappearance", "../z_arrow_portal.c", 403);
 }
 
-void ArrowLight_Charge(ArrowLight* this, PlayState* play) {
+void ArrowPortal_Charge(ArrowPortal* this, PlayState* play) {
     EnArrow* arrow = (EnArrow*)this->actor.parent;
 
     if ((arrow == NULL) || (arrow->actor.update == NULL)) {
@@ -111,18 +107,18 @@ void ArrowLight_Charge(ArrowLight* this, PlayState* play) {
     if (arrow->actor.parent == NULL) {
         this->unkPos = this->actor.world.pos;
         this->radius = 10;
-        ArrowLight_SetupAction(this, ArrowLight_Fly);
+        ArrowPortal_SetupAction(this, ArrowPortal_Fly);
         this->alpha = 255;
     }
 }
 
-void ArrowPortal_80869E6C(Vec3f* unkPos, Vec3f* lightPos, f32 scale) {
+void Arrow_Portal_80869E6C(Vec3f* unkPos, Vec3f* lightPos, f32 scale) {
     unkPos->x += ((lightPos->x - unkPos->x) * scale);
     unkPos->y += ((lightPos->y - unkPos->y) * scale);
     unkPos->z += ((lightPos->z - unkPos->z) * scale);
 }
 
-void ArrowLight_Hit(ArrowLight* this, PlayState* play) {
+void ArrowPortal_Hit(ArrowPortal* this, PlayState* play) {
     f32 scale;
     f32 offset;
     u16 timer;
@@ -148,7 +144,6 @@ void ArrowLight_Hit(ArrowLight* this, PlayState* play) {
             this->radius = (((1.0f - offset) * scale) + 10.0f);
             this->unk_160 += ((2.0f - this->unk_160) * 0.1f);
             if (this->timer < 16) {
-                if (1) {}
                 this->alpha = ((this->timer * 0x23) - 0x118);
             }
         }
@@ -174,7 +169,7 @@ void ArrowLight_Hit(ArrowLight* this, PlayState* play) {
     }
 }
 
-void ArrowLight_Fly(ArrowLight* this, PlayState* play) {
+void ArrowPortal_Fly(ArrowPortal* this, PlayState* play) {
     EnArrow* arrow = (EnArrow*)this->actor.parent;
     f32 distanceScaled;
     s32 pad;
@@ -191,11 +186,10 @@ void ArrowLight_Fly(ArrowLight* this, PlayState* play) {
     if (distanceScaled < 1.0f) {
         this->unk_160 = 1.0f;
     }
-    ArrowPortal_80869E6C(&this->unkPos, &this->actor.world.pos, 0.05f);
+    Arrow_Portal_80869E6C(&this->unkPos, &this->actor.world.pos, 0.05f);
 
     if (arrow->hitFlags & 1) {
-        Actor_PlaySfx(&this->actor, NA_SE_IT_EXPLOSION_LIGHT);
-        ArrowLight_SetupAction(this, ArrowLight_Hit);
+        ArrowPortal_SetupAction(this, ArrowPortal_Hit);
         this->timer = 32;
         this->alpha = 255;
     } else if (arrow->timer < 34) {
@@ -207,8 +201,8 @@ void ArrowLight_Fly(ArrowLight* this, PlayState* play) {
     }
 }
 
-void ArrowLight_Update(Actor* thisx, PlayState* play) {
-    ArrowLight* this = (ArrowLight*)thisx;
+void ArrowPortal_Update(Actor* thisx, PlayState* play) {
+    ArrowPortal* this = (ArrowPortal*)thisx;
 
     // See `ACTOROVL_ALLOC_ABSOLUTE`
     //! @bug This condition is too broad, the actor will also be killed by warp songs. But warp songs do not use an
@@ -221,8 +215,8 @@ void ArrowLight_Update(Actor* thisx, PlayState* play) {
     this->actionFunc(this, play);
 }
 
-void ArrowLight_Draw(Actor* thisx, PlayState* play) {
-    ArrowLight* this = (ArrowLight*)thisx;
+void ArrowPortal_Draw(Actor* thisx, PlayState* play) {
+    ArrowPortal* this = (ArrowPortal*)thisx;
     s32 pad;
     u32 stateFrames = play->state.frames;
     EnArrow* arrow = (EnArrow*)this->actor.parent;
@@ -238,7 +232,7 @@ void ArrowLight_Draw(Actor* thisx, PlayState* play) {
 
     transform = (arrow->hitFlags & 2) ? &this->actor : &arrow->actor;
 
-    OPEN_DISPS(play->state.gfxCtx, "../z_arrow_light.c", 598);
+    OPEN_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
 
     Matrix_Translate(transform->world.pos.x, transform->world.pos.y, transform->world.pos.z, MTXMODE_NEW);
     Matrix_RotateY(BINANG_TO_RAD(transform->shape.rot.y), MTXMODE_APPLY);
@@ -246,11 +240,11 @@ void ArrowLight_Draw(Actor* thisx, PlayState* play) {
     Matrix_RotateZ(BINANG_TO_RAD(transform->shape.rot.z), MTXMODE_APPLY);
     Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
 
-    // Draw yellow effect over the screen when arrow hits
+    // Draw effect over the screen when arrow hits
     if (this->unk_164 > 0) {
         POLY_XLU_DISP = Gfx_SetupDL_57(POLY_XLU_DISP);
-        gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, (s32)(30.0f * this->unk_164) & 0xFF, (s32)(40.0f * this->unk_164) & 0xFF,
-                        0, (s32)(150.0f * this->unk_164) & 0xFF);
+        gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, (s32)(10.0f * this->unk_164) & 0xFF, 0,
+                        (s32)(20.0f * this->unk_164) & 0xFF, (s32)(150.0f * this->unk_164) & 0xFF);
         gDPSetAlphaDither(POLY_XLU_DISP++, G_AD_DISABLE);
         gDPSetColorDither(POLY_XLU_DISP++, G_CD_DISABLE);
         gDPFillRectangle(POLY_XLU_DISP++, 0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
@@ -258,8 +252,8 @@ void ArrowLight_Draw(Actor* thisx, PlayState* play) {
 
     // Draw light on the arrow
     Gfx_SetupDL_25Xlu(play->state.gfxCtx);
-    gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, 255, 255, 170, this->alpha);
-    gDPSetEnvColor(POLY_XLU_DISP++, 255, 255, 0, 128);
+    gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, 200, 50, 200, this->alpha);
+    gDPSetEnvColor(POLY_XLU_DISP++, 128, 0, 128, 128);
     Matrix_RotateZYX(0x4000, 0x0, 0x0, MTXMODE_APPLY);
     if (this->timer != 0) {
         Matrix_Translate(0.0f, 0.0f, 0.0f, MTXMODE_APPLY);
@@ -268,12 +262,12 @@ void ArrowLight_Draw(Actor* thisx, PlayState* play) {
     }
     Matrix_Scale(this->radius * 0.2f, this->unk_160 * 4.0f, this->radius * 0.2f, MTXMODE_APPLY);
     Matrix_Translate(0.0f, -700.0f, 0.0f, MTXMODE_APPLY);
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, "../z_arrow_light.c", 648);
+    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, __FILE__, __LINE__);
     gSPDisplayList(POLY_XLU_DISP++, sMaterialDL);
     gSPDisplayList(POLY_XLU_DISP++,
                    Gfx_TwoTexScroll(play->state.gfxCtx, G_TX_RENDERTILE, 511 - (stateFrames * 5) % 512, 0, 4, 32, 1,
                                     511 - (stateFrames * 10) % 512, 511 - (stateFrames * 30) % 512, 8, 16));
     gSPDisplayList(POLY_XLU_DISP++, sModelDL);
 
-    CLOSE_DISPS(play->state.gfxCtx, "../z_arrow_light.c", 664);
+    CLOSE_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
 }
