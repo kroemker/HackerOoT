@@ -18,6 +18,7 @@
 #include "effect.h"
 #include "play_state.h"
 
+#include "../ovl_En_Arrow/z_en_arrow.h"
 #include "assets/objects/object_ice_objects/object_ice_objects.h"
 
 #define FLAGS 0
@@ -57,7 +58,7 @@ static ColliderCylinderInit sCylinderInit1 = {
     {
         COL_MATERIAL_NONE,
         AT_NONE,
-        AC_ON | AC_TYPE_OTHER,
+        AC_ON | AC_TYPE_OTHER | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
         OC2_TYPE_2,
         COLSHAPE_CYLINDER,
@@ -65,7 +66,7 @@ static ColliderCylinderInit sCylinderInit1 = {
     {
         ELEM_MATERIAL_UNK0,
         { 0x00000000, HIT_SPECIAL_EFFECT_NONE, 0x00 },
-        { 0xFFCFFFFF, HIT_BACKLASH_NONE, 0x00 },
+        { DMG_ARROW_ICE, HIT_BACKLASH_NONE, 0x00 },
         ATELEM_NONE,
         ACELEM_ON,
         OCELEM_ON,
@@ -85,7 +86,7 @@ static ColliderCylinderInit sCylinderInit2 = {
     {
         ELEM_MATERIAL_UNK0,
         { 0x00000000, HIT_SPECIAL_EFFECT_NONE, 0x00 },
-        { 0x4FC1FFF6, HIT_BACKLASH_NONE, 0x00 },
+        { 0x4FC1EFF6, HIT_BACKLASH_NONE, 0x00 },
         ATELEM_NONE,
         ACELEM_ON,
         OCELEM_NONE,
@@ -359,7 +360,9 @@ void BgIceShelter_Idle(BgIceShelter* this, PlayState* play) {
     if (this->cylinder1.base.acFlags & AC_HIT) {
         this->cylinder1.base.acFlags &= ~AC_HIT;
 
-        if ((this->cylinder1.base.ac != NULL) && (this->cylinder1.base.ac->id == ACTOR_EN_ICE_HONO)) {
+        if ((this->cylinder1.base.ac != NULL) &&
+            (this->cylinder1.base.ac->id == ACTOR_EN_ICE_HONO ||
+             (this->cylinder1.base.ac->id == ACTOR_EN_ARROW && this->cylinder1.base.ac->params == ARROW_ICE))) {
             if (type == RED_ICE_KING_ZORA) {
                 if (this->dyna.actor.parent != NULL) {
                     this->dyna.actor.parent->freezeTimer = 50;
