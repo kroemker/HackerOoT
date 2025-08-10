@@ -3,6 +3,7 @@
 #include "sys_matrix.h"
 #include "draw.h"
 #include "play_state.h"
+#include "printf.h"
 
 #include "assets/objects/object_gi_key/object_gi_key.h"
 #include "assets/objects/object_gi_jewel/object_gi_jewel.h"
@@ -699,7 +700,18 @@ void GetItem_DrawOpa10Xlu2(PlayState* play, s16 giDrawId) {
 }
 
 void GetItem_DrawMagicArrow(PlayState* play, s16 giDrawId) {
-    s32 pad;
+    u8 colors[3][6] = { { 255, 200, 0, 255, 0, 0 }, { 0, 200, 255, 0, 0, 255 }, { 255, 170, 255, 255, 0, 255 } };
+    f32 lerp = (play->gameplayFrames & 0x3F) / 64.0f;
+    u32 currentColor = (play->gameplayFrames >> 6) % 3;
+    u32 nextColor = (currentColor + 1) % 3;
+    u8 targetColor[6];
+    targetColor[0] = (1.0f - lerp) * colors[currentColor][0] + lerp * colors[nextColor][0];
+    targetColor[1] = (1.0f - lerp) * colors[currentColor][1] + lerp * colors[nextColor][1];
+    targetColor[2] = (1.0f - lerp) * colors[currentColor][2] + lerp * colors[nextColor][2];
+    targetColor[3] = (1.0f - lerp) * colors[currentColor][3] + lerp * colors[nextColor][3];
+    targetColor[4] = (1.0f - lerp) * colors[currentColor][4] + lerp * colors[nextColor][4];
+    targetColor[5] = (1.0f - lerp) * colors[currentColor][5] + lerp * colors[nextColor][5];
+    PRINTF("current=%d, next=%d, lerp=%.2f\n", currentColor, nextColor, lerp);
 
     OPEN_DISPS(play->state.gfxCtx, "../z_draw.c", 1039);
 
@@ -709,7 +721,10 @@ void GetItem_DrawMagicArrow(PlayState* play, s16 giDrawId) {
 
     Gfx_SetupDL_25Xlu(play->state.gfxCtx);
     MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, "../z_draw.c", 1050);
-    gSPDisplayList(POLY_XLU_DISP++, sDrawItemTable[giDrawId].dlists[1]);
+    // gSPDisplayList(POLY_XLU_DISP++, sDrawItemTable[giDrawId].dlists[1]);
+    gDPSetPrimColor(POLY_XLU_DISP++, 0, 0x80, targetColor[0], targetColor[1], targetColor[2], 255);
+    gDPSetEnvColor(POLY_XLU_DISP++, targetColor[3], targetColor[4], targetColor[5], 255);
+
     gSPDisplayList(POLY_XLU_DISP++, sDrawItemTable[giDrawId].dlists[2]);
 
     CLOSE_DISPS(play->state.gfxCtx, "../z_draw.c", 1056);

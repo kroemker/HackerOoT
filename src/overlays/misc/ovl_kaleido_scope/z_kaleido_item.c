@@ -17,8 +17,8 @@
 u8 gAmmoItems[] = {
     ITEM_DEKU_STICK, // SLOT_DEKU_STICK
     ITEM_DEKU_NUT,   // SLOT_DEKU_NUT
-    ITEM_BOMB,       // SLOT_BOMB
-    ITEM_BOW,        // SLOT_BOW
+    ITEM_NONE,       // SLOT_BOMB
+    ITEM_NONE,       // SLOT_BOW
     ITEM_NONE,       // SLOT_ARROW_FIRE
     ITEM_NONE,       // SLOT_DINS_FIRE
     ITEM_SLINGSHOT,  // SLOT_SLINGSHOT
@@ -129,8 +129,8 @@ void KaleidoScope_SetItemCursorPos(PauseContext* pauseCtx) {
 
 void KaleidoScope_DrawItemSelect(PlayState* play) {
     static s16 magicArrowEffectsR[] = { 255, 100, 255 };
-    static s16 magicArrowEffectsG[] = { 0, 100, 255 };
-    static s16 magicArrowEffectsB[] = { 0, 255, 100 };
+    static s16 magicArrowEffectsG[] = { 0, 100, 100 };
+    static s16 magicArrowEffectsB[] = { 0, 255, 255 };
     Input* input = &play->state.input[0];
     PauseContext* pauseCtx = &play->pauseCtx;
     u16 i;

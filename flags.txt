@@ -1,0 +1,5 @@
+Switch:
+0x00: Magic Arrows chest
+
+Chest:
+0x00: Magic Arrow chest

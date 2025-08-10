@@ -13794,10 +13794,13 @@ s32 func_8084DFF4(PlayState* play, Player* this) {
     }
 
     if (this->av1.actionVar1 == 0) {
+        u16 textId;
         giEntry = &sGetItemTable[this->getItemId - 1];
         this->av1.actionVar1 = 1;
 
-        Message_StartTextbox(play, giEntry->textId, &this->actor);
+        textId = giEntry->itemId == ITEM_ARROW_PORTAL ? 0x8001 : giEntry->textId;
+
+        Message_StartTextbox(play, textId, &this->actor);
         Item_Give(play, giEntry->itemId);
 
         if (((this->getItemId >= GI_RUPEE_GREEN) && (this->getItemId <= GI_RUPEE_RED)) ||

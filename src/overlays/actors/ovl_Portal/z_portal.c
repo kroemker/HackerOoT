@@ -20,7 +20,7 @@
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
 
 #define WARP_RANGE 80.0f
-#define X_WARP_OFFSET 2000.0f
+#define X_WARP_OFFSET 4000.0f
 #define WARP_SPEED 12.0f
 #define WARP_SCALE_ADJUSTMENT 0.001f
 #define WARP_SCALE 0
@@ -303,7 +303,9 @@ void Portal_Action_PreEndWarp(Portal* this, PlayState* play) {
     Math_ApproachF(&this->warpActor->world.pos.x, this->orbBasePos.x, 0.1f, WARP_SPEED);
     Math_ApproachF(&this->warpActor->world.pos.y, this->orbBasePos.y, 0.1f, WARP_SPEED);
     Math_ApproachF(&this->warpActor->world.pos.z, this->orbBasePos.z, 0.1f, WARP_SPEED);
-    Portal_SpawnOrbEffect(this, play, &this->warpActor->world.pos, ORB_SIZE);
+    if (this->timer > 7) {
+        Portal_SpawnOrbEffect(this, play, &this->warpActor->world.pos, ORB_SIZE);
+    }
     this->warpActor->gravity = 0.0f;
 
     PRINTF("Portal: pre end warp: timer=%d\n", this->timer);
@@ -324,11 +326,7 @@ void Portal_Action_EndWarp(Portal* this, PlayState* play) {
 
     Math_Vec3f_Copy(&orbPos, &this->warpActor->world.pos);
     orbPos.y = this->actor.world.pos.y;
-
-    if (this->timer >= 15) {
-        Portal_SpawnOrbEffect(this, play, &orbPos, ORB_SIZE * (1.0f / this->timer));
-        this->warpActor->draw = this->warpActorDrawFunc;
-    }
+    this->warpActor->draw = this->warpActorDrawFunc;
 
     Portal_DimLighting(play, this->timer * (1 / 15.0f));
 

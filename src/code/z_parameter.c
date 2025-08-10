@@ -3546,8 +3546,8 @@ void func_8008A994(InterfaceContext* interfaceCtx) {
 
 void Interface_Draw(PlayState* play) {
     static s16 magicArrowEffectsR[] = { 255, 100, 255 };
-    static s16 magicArrowEffectsG[] = { 0, 100, 255 };
-    static s16 magicArrowEffectsB[] = { 0, 255, 100 };
+    static s16 magicArrowEffectsG[] = { 0, 100, 100 };
+    static s16 magicArrowEffectsB[] = { 0, 255, 255 };
     static s16 timerDigitLeftPos[] = { 16, 25, 34, 42, 51 };
     static s16 sDigitWidths[] = { 9, 9, 8, 9, 9 };
     // unused, most likely colors
