@@ -1109,94 +1109,46 @@ Gfx gLinkChildBunnyHoodDL[114] = {
 
 // Skeleton
 
-LodLimb gLinkChildRootLimb = {
-#include "assets/objects/object_link_child/gLinkChildRootLimb.inc.c"
-};
 
-LodLimb gLinkChildWaistLimb = {
-#include "assets/objects/object_link_child/gLinkChildWaistLimb.inc.c"
-};
 
-LodLimb gLinkChildLowerControlLimb = {
-#include "assets/objects/object_link_child/gLinkChildLowerControlLimb.inc.c"
-};
 
-LodLimb gLinkChildRightThighLimb = {
-#include "assets/objects/object_link_child/gLinkChildRightThighLimb.inc.c"
-};
 
-LodLimb gLinkChildRightShinLimb = {
-#include "assets/objects/object_link_child/gLinkChildRightShinLimb.inc.c"
-};
 
-LodLimb gLinkChildRightFootLimb = {
-#include "assets/objects/object_link_child/gLinkChildRightFootLimb.inc.c"
-};
 
-LodLimb gLinkChildLeftThighLimb = {
-#include "assets/objects/object_link_child/gLinkChildLeftThighLimb.inc.c"
-};
 
-LodLimb gLinkChildLeftShinLimb = {
-#include "assets/objects/object_link_child/gLinkChildLeftShinLimb.inc.c"
-};
 
-LodLimb gLinkChildLeftFootLimb = {
-#include "assets/objects/object_link_child/gLinkChildLeftFootLimb.inc.c"
-};
 
-LodLimb gLinkChildUpperControlLimb = {
-#include "assets/objects/object_link_child/gLinkChildUpperControlLimb.inc.c"
-};
 
-LodLimb gLinkChildHeadLimb = {
-#include "assets/objects/object_link_child/gLinkChildHeadLimb.inc.c"
-};
 
-LodLimb gLinkChildHatLimb = {
-#include "assets/objects/object_link_child/gLinkChildHatLimb.inc.c"
-};
 
-LodLimb gLinkChildCollarLimb = {
-#include "assets/objects/object_link_child/gLinkChildCollarLimb.inc.c"
-};
 
-LodLimb gLinkChildLeftshoulderLimb = {
-#include "assets/objects/object_link_child/gLinkChildLeftshoulderLimb.inc.c"
-};
 
-LodLimb gLinkChildLeftForearmLimb = {
-#include "assets/objects/object_link_child/gLinkChildLeftForearmLimb.inc.c"
-};
 
-LodLimb gLinkChildLeftHandLimb = {
-#include "assets/objects/object_link_child/gLinkChildLeftHandLimb.inc.c"
-};
 
-LodLimb gLinkChildRightshoulderLimb = {
-#include "assets/objects/object_link_child/gLinkChildRightshoulderLimb.inc.c"
-};
 
-LodLimb gLinkChildRightForearmLimb = {
-#include "assets/objects/object_link_child/gLinkChildRightForearmLimb.inc.c"
-};
 
-LodLimb gLinkChildRightHandLimb = {
-#include "assets/objects/object_link_child/gLinkChildRightHandLimb.inc.c"
-};
 
-LodLimb gLinkChildSwordAndSheathLimb = {
-#include "assets/objects/object_link_child/gLinkChildSwordAndSheathLimb.inc.c"
-};
 
-LodLimb gLinkChildTorsoLimb = {
-#include "assets/objects/object_link_child/gLinkChildTorsoLimb.inc.c"
-};
 
-void* gLinkChildLimbs[] = {
-#include "assets/objects/object_link_child/gLinkChildLimbs.inc.c"
-};
 
-FlexSkeletonHeader gLinkChildSkel = {
-#include "assets/objects/object_link_child/gLinkChildSkel.inc.c"
-};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#include "gLinkChildSkel.c"

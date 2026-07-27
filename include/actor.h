@@ -13,10 +13,11 @@
 #define INVISIBLE_ACTOR_MAX 20
 
 #define MASS_IMMOVABLE 0xFF // Cannot be pushed by OC colliders
-#define MASS_HEAVY 0xFE // Can only be pushed by OC colliders from actors with IMMOVABLE or HEAVY mass.
+#define MASS_HEAVY 0xFE     // Can only be pushed by OC colliders from actors with IMMOVABLE or HEAVY mass.
 
 // These are default parameters used for "animation fidgeting", which procedurally generate actor idle animations.
-// These calculations may be performed within individual actors, or by using fidget tables with `Actor_UpdateFidgetTables`.
+// These calculations may be performed within individual actors, or by using fidget tables with
+// `Actor_UpdateFidgetTables`.
 #define FIDGET_FREQ_Y 0x814
 #define FIDGET_FREQ_Z 0x940
 #define FIDGET_FREQ_LIMB 0x32
@@ -35,15 +36,15 @@ typedef u16 (*NpcGetTextIdFunc)(struct PlayState*, struct Actor*);
 typedef s16 (*NpcUpdateTalkStateFunc)(struct PlayState*, struct Actor*);
 
 typedef struct ActorShape {
-    /* 0x00 */ Vec3s rot; // Current actor shape rotation
-    /* 0x06 */ s16 face; // Used to index eyes and mouth textures. Only used by player
-    /* 0x08 */ f32 yOffset; // Model y axis offset. Represents model space units
+    /* 0x00 */ Vec3s rot;                  // Current actor shape rotation
+    /* 0x06 */ s16 face;                   // Used to index eyes and mouth textures. Only used by player
+    /* 0x08 */ f32 yOffset;                // Model y axis offset. Represents model space units
     /* 0x0C */ ActorShadowFunc shadowDraw; // Shadow draw function
-    /* 0x10 */ f32 shadowScale; // Changes the size of the shadow
-    /* 0x14 */ u8 shadowAlpha; // Default is 255
-    /* 0x15 */ u8 feetFloorFlag; // 0 if actor or feet aren't on ground, or 1 or 2 depending on feet positions
-    /* 0x18 */ Vec3f feetPos[2]; // Update by using `Actor_SetFeetPos` in PostLimbDraw
-} ActorShape; // size = 0x30
+    /* 0x10 */ f32 shadowScale;            // Changes the size of the shadow
+    /* 0x14 */ u8 shadowAlpha;             // Default is 255
+    /* 0x15 */ u8 feetFloorFlag;           // 0 if actor or feet aren't on ground, or 1 or 2 depending on feet positions
+    /* 0x18 */ Vec3f feetPos[2];           // Update by using `Actor_SetFeetPos` in PostLimbDraw
+} ActorShape;                              // size = 0x30
 
 // Actor is discoverable by the Attention System. This enables Navi to hover over the actor when it is in range.
 // The actor can also be locked onto (as long as `ACTOR_FLAG_LOCK_ON_DISABLED` is not set).
@@ -101,8 +102,9 @@ typedef struct ActorShape {
 #define ACTOR_FLAG_IGNORE_QUAKE (1 << 12)
 
 // The hookshot is currently attached to this actor.
-// The behavior that occurs after attachment is determined by `ACTOR_FLAG_HOOKSHOT_PULLS_ACTOR` and `ACTOR_FLAG_HOOKSHOT_PULLS_PLAYER`.
-// If neither of those flags are set attachment cannot occur, and the hookshot will simply act as a damage source.
+// The behavior that occurs after attachment is determined by `ACTOR_FLAG_HOOKSHOT_PULLS_ACTOR` and
+// `ACTOR_FLAG_HOOKSHOT_PULLS_PLAYER`. If neither of those flags are set attachment cannot occur, and the hookshot will
+// simply act as a damage source.
 //
 // This flag is also reused to indicate that an actor is attached to the boomerang.
 // This only has an effect for Gold Skulltula Tokens (EN_SI) which has overlapping behavior for hookshot and boomerang.
@@ -124,13 +126,13 @@ typedef struct ActorShape {
 #define ACTOR_FLAG_CARRY_X_ROT_INFLUENCE (1 << 17)
 
 // When locked onto an actor with this flag set, the C-Up button can be used to talk to this actor.
-// A C-Up button labeled "Navi" will appear on the HUD when locked on which indicates the actor can be checked with Navi.
-// With this flag Player talks directly to the actor with C-Up. It is expected that the resulting dialog should appear
-// to be coming from Navi, even though she is not involved at all with this interaction.
+// A C-Up button labeled "Navi" will appear on the HUD when locked on which indicates the actor can be checked with
+// Navi. With this flag Player talks directly to the actor with C-Up. It is expected that the resulting dialog should
+// appear to be coming from Navi, even though she is not involved at all with this interaction.
 #define ACTOR_FLAG_TALK_WITH_C_UP (1 << 18)
 
 // Flags controlling the use of `Actor.sfx`. Do not use directly.
-#define ACTOR_FLAG_SFX_ACTOR_POS_2 (1 << 19) // see Actor_PlaySfx_Flagged2
+#define ACTOR_FLAG_SFX_ACTOR_POS_2 (1 << 19)      // see Actor_PlaySfx_Flagged2
 #define ACTOR_AUDIO_FLAG_SFX_CENTERED_1 (1 << 20) // see Actor_PlaySfx_FlaggedCentered1
 #define ACTOR_AUDIO_FLAG_SFX_CENTERED_2 (1 << 21) // see Actor_PlaySfx_FlaggedCentered2
 
@@ -150,7 +152,8 @@ typedef struct ActorShape {
 #define ACTOR_FLAG_UPDATE_DURING_OCARINA (1 << 25)
 
 // Actor can press and hold down switches.
-// See usages of `DynaPolyActor_SetSwitchPressed` and `DynaPolyActor_IsSwitchPressed` for more context on how switches work.
+// See usages of `DynaPolyActor_SetSwitchPressed` and `DynaPolyActor_IsSwitchPressed` for more context on how switches
+// work.
 #define ACTOR_FLAG_CAN_PRESS_SWITCHES (1 << 26)
 
 // Player is not able to lock onto the actor.
@@ -173,84 +176,94 @@ typedef struct ActorShape {
 #define COLORFILTER_GET_DURATION(colorFilterParams) ((colorFilterParams) & 0xFF)
 
 #define COLORFILTER_COLORFLAG_GRAY 0x8000
-#define COLORFILTER_COLORFLAG_RED  0x4000
+#define COLORFILTER_COLORFLAG_RED 0x4000
 #define COLORFILTER_COLORFLAG_BLUE 0x0000
 
 #define COLORFILTER_INTENSITY_FLAG 0x8000
 
-#define COLORFILTER_BUFFLAG_XLU    0x2000
-#define COLORFILTER_BUFFLAG_OPA    0x0000
+#define COLORFILTER_BUFFLAG_XLU 0x2000
+#define COLORFILTER_BUFFLAG_OPA 0x0000
 
-#define BGCHECKFLAG_GROUND (1 << 0) // Standing on the ground
-#define BGCHECKFLAG_GROUND_TOUCH (1 << 1) // Has touched the ground (only active for 1 frame)
-#define BGCHECKFLAG_GROUND_LEAVE (1 << 2) // Has left the ground (only active for 1 frame)
-#define BGCHECKFLAG_WALL (1 << 3) // Touching a wall
-#define BGCHECKFLAG_CEILING (1 << 4) // Touching a ceiling
-#define BGCHECKFLAG_WATER (1 << 5) // In water
-#define BGCHECKFLAG_WATER_TOUCH (1 << 6) // Has touched water (reset when leaving water)
-#define BGCHECKFLAG_GROUND_STRICT (1 << 7) // Strictly on ground (BGCHECKFLAG_GROUND has some leeway)
-#define BGCHECKFLAG_CRUSHED (1 << 8) // Crushed between a floor and ceiling (triggers a void for player)
+#define BGCHECKFLAG_GROUND (1 << 0)               // Standing on the ground
+#define BGCHECKFLAG_GROUND_TOUCH (1 << 1)         // Has touched the ground (only active for 1 frame)
+#define BGCHECKFLAG_GROUND_LEAVE (1 << 2)         // Has left the ground (only active for 1 frame)
+#define BGCHECKFLAG_WALL (1 << 3)                 // Touching a wall
+#define BGCHECKFLAG_CEILING (1 << 4)              // Touching a ceiling
+#define BGCHECKFLAG_WATER (1 << 5)                // In water
+#define BGCHECKFLAG_WATER_TOUCH (1 << 6)          // Has touched water (reset when leaving water)
+#define BGCHECKFLAG_GROUND_STRICT (1 << 7)        // Strictly on ground (BGCHECKFLAG_GROUND has some leeway)
+#define BGCHECKFLAG_CRUSHED (1 << 8)              // Crushed between a floor and ceiling (triggers a void for player)
 #define BGCHECKFLAG_PLAYER_WALL_INTERACT (1 << 9) // Only set/used by player, related to interacting with walls
 
 typedef struct Actor {
-    /* 0x000 */ s16 id; // Actor ID
+    /* 0x000 */ s16 id;      // Actor ID
     /* 0x002 */ u8 category; // Actor category. Refer to the corresponding enum for values
-    /* 0x003 */ s8 room; // Room number the actor is in. -1 denotes that the actor won't despawn on a room change
-    /* 0x004 */ u32 flags; // Flags used for various purposes
+    /* 0x003 */ s8 room;     // Room number the actor is in. -1 denotes that the actor won't despawn on a room change
+    /* 0x004 */ u32 flags;   // Flags used for various purposes
     /* 0x008 */ PosRot home; // Initial position/rotation when spawned. Can be used for other purposes
-    /* 0x01C */ s16 params; // Configurable variable set by the actor's spawn data; original name: "args_data"
-    /* 0x01E */ s8 objectSlot; // Object slot (in ObjectContext) corresponding to the actor's object; original name: "bank"
-    /* 0x01F */ s8 attentionRangeType; // Controls the attention actor range and the lock-on leash range. See `AttentionRangeType`.
-    /* 0x020 */ u16 sfx; // SFX ID to play. Sfx plays when value is set, then is cleared the following update cycle
+    /* 0x01C */ s16 params;  // Configurable variable set by the actor's spawn data; original name: "args_data"
+    /* 0x01E */ s8
+        objectSlot; // Object slot (in ObjectContext) corresponding to the actor's object; original name: "bank"
+    /* 0x01F */ s8
+        attentionRangeType; // Controls the attention actor range and the lock-on leash range. See `AttentionRangeType`.
+    /* 0x020 */ u16 sfx;    // SFX ID to play. Sfx plays when value is set, then is cleared the following update cycle
     /* 0x024 */ PosRot world; // Position/rotation in the world
-    /* 0x038 */ PosRot focus; // Player + camera focus pos during lock-on, among other uses. For player this represents head pos and rot.
+    /* 0x038 */ PosRot focus; // Player + camera focus pos during lock-on, among other uses. For player this represents
+                              // head pos and rot.
     /* 0x04C */ f32 lockOnArrowOffset; // Height offset of the lock-on arrow relative to `focus` position
-    /* 0x050 */ Vec3f scale; // Scale of the actor in each axis
-    /* 0x05C */ Vec3f velocity; // Velocity of the actor in each axis
-    /* 0x068 */ f32 speed; // Context dependent speed value. Can be used for XZ or XYZ depending on which move function is used
+    /* 0x050 */ Vec3f scale;           // Scale of the actor in each axis
+    /* 0x05C */ Vec3f velocity;        // Velocity of the actor in each axis
+    /* 0x068 */ f32
+        speed; // Context dependent speed value. Can be used for XZ or XYZ depending on which move function is used
     /* 0x06C */ f32 gravity; // Acceleration due to gravity. Value is added to Y velocity every frame
-    /* 0x070 */ f32 minVelocityY; // Sets the lower bounds cap for velocity along the Y axis. Only relevant when moved with gravity.
-    /* 0x074 */ struct CollisionPoly* wallPoly; // Wall polygon the actor is touching
+    /* 0x070 */ f32
+        minVelocityY; // Sets the lower bounds cap for velocity along the Y axis. Only relevant when moved with gravity.
+    /* 0x074 */ struct CollisionPoly* wallPoly;  // Wall polygon the actor is touching
     /* 0x078 */ struct CollisionPoly* floorPoly; // Floor polygon directly below the actor
-    /* 0x07C */ u8 wallBgId; // Bg ID of the wall polygon the actor is touching
-    /* 0x07D */ u8 floorBgId; // Bg ID of the floor polygon directly below the actor
-    /* 0x07E */ s16 wallYaw; // Y rotation of the wall polygon the actor is touching
-    /* 0x080 */ f32 floorHeight; // Y position of the floor polygon directly below the actor
-    /* 0x084 */ f32 depthInWater; // Distance below the surface of active waterbox. Positive value means under water, negative value means above water
+    /* 0x07C */ u8 wallBgId;                     // Bg ID of the wall polygon the actor is touching
+    /* 0x07D */ u8 floorBgId;                    // Bg ID of the floor polygon directly below the actor
+    /* 0x07E */ s16 wallYaw;                     // Y rotation of the wall polygon the actor is touching
+    /* 0x080 */ f32 floorHeight;                 // Y position of the floor polygon directly below the actor
+    /* 0x084 */ f32 depthInWater; // Distance below the surface of active waterbox. Positive value means under water,
+                                  // negative value means above water
     /* 0x088 */ u16 bgCheckFlags; // Flags indicating how the actor is interacting with collision
-    /* 0x08A */ s16 yawTowardsPlayer; // Y rotation difference between the actor and the player
-    /* 0x08C */ f32 xyzDistToPlayerSq; // Squared distance between the actor and the player
-    /* 0x090 */ f32 xzDistToPlayer; // Distance between the actor and the player in the XZ plane
-    /* 0x094 */ f32 yDistToPlayer; // Dist is negative if the actor is above the player
+    /* 0x08A */ s16 yawTowardsPlayer;          // Y rotation difference between the actor and the player
+    /* 0x08C */ f32 xyzDistToPlayerSq;         // Squared distance between the actor and the player
+    /* 0x090 */ f32 xzDistToPlayer;            // Distance between the actor and the player in the XZ plane
+    /* 0x094 */ f32 yDistToPlayer;             // Dist is negative if the actor is above the player
     /* 0x098 */ CollisionCheckInfo colChkInfo; // Variables related to the Collision Check system
-    /* 0x0B4 */ ActorShape shape; // Variables related to the physical shape of the actor
-    /* 0x0E4 */ Vec3f projectedPos; // Position of the actor in projected space
-    /* 0x0F0 */ f32 projectedW; // w component of the projected actor position
-    /* 0x0F4 */ f32 cullingVolumeDistance; // Forward distance of the culling volume (in projected space). See `Actor_CullingCheck` and `Actor_CullingVolumeTest` for more information.
-    /* 0x0F8 */ f32 cullingVolumeScale; // Scale of the culling volume (in projected space). See `Actor_CullingCheck` and `Actor_CullingVolumeTest` for more information.
-    /* 0x0FC */ f32 cullingVolumeDownward; // Downward height of the culling volume (in projected space). See `Actor_CullingCheck` and `Actor_CullingVolumeTest` for more information.
-    /* 0x100 */ Vec3f prevPos; // World position from the previous update cycle
-    /* 0x10C */ u8 isLockedOn; // Set to true if the actor is currently locked-on by Player
-    /* 0x10D */ u8 attentionPriority; // Lower values have higher priority. Resets to 0 when lock-on is released.
-    /* 0x10E */ u16 textId; // Text ID to pass to player/display when interacting with the actor
-    /* 0x110 */ u16 freezeTimer; // Actor does not update when set. Timer decrements automatically
-    /* 0x112 */ u16 colorFilterParams; // Set color filter to red, blue, or white. Toggle opa or xlu
-    /* 0x114 */ u8 colorFilterTimer; // A non-zero value enables the color filter. Decrements automatically
-    /* 0x115 */ u8 isDrawn; // Set to true if the actor is currently being drawn. Always stays false for lens actors
-    /* 0x116 */ u8 dropFlag; // Configures what item is dropped by the actor from `Item_DropCollectibleRandom`
+    /* 0x0B4 */ ActorShape shape;              // Variables related to the physical shape of the actor
+    /* 0x0E4 */ Vec3f projectedPos;            // Position of the actor in projected space
+    /* 0x0F0 */ f32 projectedW;                // w component of the projected actor position
+    /* 0x0F4 */ f32 cullingVolumeDistance;     // Forward distance of the culling volume (in projected space). See
+                                           // `Actor_CullingCheck` and `Actor_CullingVolumeTest` for more information.
+    /* 0x0F8 */ f32 cullingVolumeScale;    // Scale of the culling volume (in projected space). See `Actor_CullingCheck`
+                                           // and `Actor_CullingVolumeTest` for more information.
+    /* 0x0FC */ f32 cullingVolumeDownward; // Downward height of the culling volume (in projected space). See
+                                           // `Actor_CullingCheck` and `Actor_CullingVolumeTest` for more information.
+    /* 0x100 */ Vec3f prevPos;             // World position from the previous update cycle
+    /* 0x10C */ u8 isLockedOn;             // Set to true if the actor is currently locked-on by Player
+    /* 0x10D */ u8 attentionPriority;      // Lower values have higher priority. Resets to 0 when lock-on is released.
+    /* 0x10E */ u16 textId;                // Text ID to pass to player/display when interacting with the actor
+    /* 0x110 */ u16 freezeTimer;           // Actor does not update when set. Timer decrements automatically
+    /* 0x112 */ u16 colorFilterParams;     // Set color filter to red, blue, or white. Toggle opa or xlu
+    /* 0x114 */ u8 colorFilterTimer;       // A non-zero value enables the color filter. Decrements automatically
+    /* 0x115 */ u8 isDrawn;     // Set to true if the actor is currently being drawn. Always stays false for lens actors
+    /* 0x116 */ u8 dropFlag;    // Configures what item is dropped by the actor from `Item_DropCollectibleRandom`
     /* 0x117 */ u8 naviEnemyId; // Sets what 0600 dialog to display when talking to navi. Default 0xFF
     /* 0x118 */ struct Actor* parent; // Usage is actor specific. Set if actor is spawned via `Actor_SpawnAsChild`
-    /* 0x11C */ struct Actor* child; // Usage is actor specific. Set if actor is spawned via `Actor_SpawnAsChild`
-    /* 0x120 */ struct Actor* prev; // Previous actor of this category
-    /* 0x124 */ struct Actor* next; // Next actor of this category
-    /* 0x128 */ ActorFunc init; // Initialization Routine. Called by `Actor_Init` or `Actor_UpdateAll`
-    /* 0x12C */ ActorFunc destroy; // Destruction Routine. Called by `Actor_Destroy`
-    /* 0x130 */ ActorFunc update; // Update Routine. Called by `Actor_UpdateAll`
-    /* 0x134 */ ActorFunc draw; // Draw Routine. Called by `Actor_Draw`
+    /* 0x11C */ struct Actor* child;  // Usage is actor specific. Set if actor is spawned via `Actor_SpawnAsChild`
+    /* 0x120 */ struct Actor* prev;   // Previous actor of this category
+    /* 0x124 */ struct Actor* next;   // Next actor of this category
+    /* 0x128 */ ActorFunc init;       // Initialization Routine. Called by `Actor_Init` or `Actor_UpdateAll`
+    /* 0x12C */ ActorFunc destroy;    // Destruction Routine. Called by `Actor_Destroy`
+    /* 0x130 */ ActorFunc update;     // Update Routine. Called by `Actor_UpdateAll`
+    /* 0x134 */ ActorFunc draw;       // Draw Routine. Called by `Actor_Draw`
     /* 0x138 */ struct ActorOverlay* overlayEntry; // Pointer to the overlay table entry for this actor
 #if ENABLE_ANIMATED_MATERIALS
     /* 0x13C */ AnimatedMatContext animMatCtx;
 #endif
+    f32 speedCap;
 } Actor; // size = 0x14C
 
 typedef enum ActorFootIndex {
@@ -268,13 +281,15 @@ if neither of the above are set : blue
 0x2000 : translucent, else opaque
 */
 
-#define DYNA_TRANSFORM_POS (1 << 0) // Position of the actors on top follows the dynapoly actor's movement.
+#define DYNA_TRANSFORM_POS (1 << 0)   // Position of the actors on top follows the dynapoly actor's movement.
 #define DYNA_TRANSFORM_ROT_Y (1 << 1) // The Y rotation of the actors on top follows the dynapoly actor's Y rotation.
 
-#define DYNA_INTERACT_ACTOR_ON_TOP (1 << 0) // There is an actor standing on the collision of the dynapoly actor
+#define DYNA_INTERACT_ACTOR_ON_TOP (1 << 0)  // There is an actor standing on the collision of the dynapoly actor
 #define DYNA_INTERACT_PLAYER_ON_TOP (1 << 1) // The player actor is standing on the collision of the dynapoly actor
-#define DYNA_INTERACT_PLAYER_ABOVE (1 << 2) // The player is directly above the collision of the dynapoly actor (any distance above)
-#define DYNA_INTERACT_ACTOR_SWITCH_PRESSED (1 << 3) // An actor that is capable of pressing switches is on top of the dynapoly actor
+#define DYNA_INTERACT_PLAYER_ABOVE \
+    (1 << 2) // The player is directly above the collision of the dynapoly actor (any distance above)
+#define DYNA_INTERACT_ACTOR_SWITCH_PRESSED \
+    (1 << 3) // An actor that is capable of pressing switches is on top of the dynapoly actor
 
 typedef struct DynaPolyActor {
     /* 0x000 */ struct Actor actor;
@@ -428,23 +443,23 @@ typedef struct LockOnReticle {
 } LockOnReticle; // size = 0x14
 
 typedef struct Attention {
-    /* 0x00 */ Vec3f naviHoverPos; // Navi's current hover position
-    /* 0x0C */ Vec3f reticlePos; // Main reticle pos which each `LockOnReticle` instance can reference
+    /* 0x00 */ Vec3f naviHoverPos;         // Navi's current hover position
+    /* 0x0C */ Vec3f reticlePos;           // Main reticle pos which each `LockOnReticle` instance can reference
     /* 0x18 */ Color_RGBAf naviInnerColor; // Navi inner color, based on actor category
     /* 0x28 */ Color_RGBAf naviOuterColor; // Navi outer color, based on actor category
-    /* 0x38 */ Actor* naviHoverActor;  // The actor that Navi hovers over
-    /* 0x3C */ Actor* reticleActor; // Actor to draw a reticle over
+    /* 0x38 */ Actor* naviHoverActor;      // The actor that Navi hovers over
+    /* 0x3C */ Actor* reticleActor;        // Actor to draw a reticle over
     /* 0x40 */ f32 naviMoveProgressFactor; // Controls Navi so she can smootly transition to an actor
     /* 0x44 */ f32 reticleRadius; // Main reticle radius value which each `LockOnReticle` instance can reference
     /* 0x48 */ s16 reticleFadeAlphaControl; // Set and fade the reticle alpha; Non-zero values control if it should draw
-    /* 0x4A */ u8 naviHoverActorCategory; // Category of the actor Navi is currently hovering over
-    /* 0x4B */ u8 reticleSpinCounter; // Counts up when a reticle is active, used for the spinning animation
-    /* 0x4C */ s8 curReticle; // Indexes lockOnReticles[]
+    /* 0x4A */ u8 naviHoverActorCategory;   // Category of the actor Navi is currently hovering over
+    /* 0x4B */ u8 reticleSpinCounter;       // Counts up when a reticle is active, used for the spinning animation
+    /* 0x4C */ s8 curReticle;               // Indexes lockOnReticles[]
     /* 0x50 */ LockOnReticle lockOnReticles[3]; // Multiple reticles are used for a motion-blur effect
-    /* 0x8C */ Actor* forcedLockOnActor; // Forces lock-on to this actor when set (never used in practice)
-    /* 0x90 */ Actor* bgmEnemy; // The nearest actor which can trigger enemy background music
-    /* 0x94 */ Actor* arrowHoverActor; // Actor to draw an arrow over
-} Attention; // size = 0x98
+    /* 0x8C */ Actor* forcedLockOnActor;        // Forces lock-on to this actor when set (never used in practice)
+    /* 0x90 */ Actor* bgmEnemy;                 // The nearest actor which can trigger enemy background music
+    /* 0x94 */ Actor* arrowHoverActor;          // Actor to draw an arrow over
+} Attention;                                    // size = 0x98
 
 // It is difficult to give each type a name because it is numerically based
 // and there are so many different combinations.
@@ -473,15 +488,15 @@ typedef struct TitleCardContext {
     /* 0x08 */ u8 width;
     /* 0x09 */ u8 height;
     /* 0x0A */ u8 durationTimer; // how long the title card appears for before fading
-    /* 0x0B */ u8 delayTimer; // how long the title card waits to appear
+    /* 0x0B */ u8 delayTimer;    // how long the title card waits to appear
     /* 0x0C */ s16 alpha;
     /* 0x0E */ s16 intensity;
 } TitleCardContext; // size = 0x10
 
 typedef struct ActorListEntry {
-    /* 0x00 */ s32 length; // number of actors loaded of this category
+    /* 0x00 */ s32 length;  // number of actors loaded of this category
     /* 0x04 */ Actor* head; // pointer to head of the linked list of this category (most recent actor added)
-} ActorListEntry; // size = 0x08
+} ActorListEntry;           // size = 0x08
 
 typedef struct ActorContextSceneFlags {
     /* 0x00 */ u32 swch;
@@ -508,7 +523,7 @@ typedef struct ActorContext {
     /* 0x128 */ TitleCardContext titleCtx;
     /* 0x138 */ char unk_138[0x04];
     /* 0x13C */ void* absoluteSpace; // Space used to allocate actor overlays with alloc type ACTOROVL_ALLOC_ABSOLUTE
-} ActorContext; // size = 0x140
+} ActorContext;                      // size = 0x140
 
 // EnDoor and DoorKiller share openAnim and playerIsOpening
 // Due to alignment, a substruct cannot be used in the structs of these actors.
@@ -550,18 +565,18 @@ typedef enum DoorOpenAnim {
 #define UPDBGCHECKINFO_FLAG_7 (1 << 7) // alternate wall check?
 
 typedef enum NpcTalkState {
-    /* 0x0 */ NPC_TALK_STATE_IDLE, // NPC not currently talking to player
-    /* 0x1 */ NPC_TALK_STATE_TALKING, // NPC is currently talking to player
-    /* 0x2 */ NPC_TALK_STATE_ACTION, // An NPC-defined action triggered in the conversation
+    /* 0x0 */ NPC_TALK_STATE_IDLE,      // NPC not currently talking to player
+    /* 0x1 */ NPC_TALK_STATE_TALKING,   // NPC is currently talking to player
+    /* 0x2 */ NPC_TALK_STATE_ACTION,    // An NPC-defined action triggered in the conversation
     /* 0x3 */ NPC_TALK_STATE_ITEM_GIVEN // NPC finished giving an item and text box is done
 } NpcTalkState;
 
 typedef enum NpcTrackingMode {
     /* 0x0 */ NPC_TRACKING_PLAYER_AUTO_TURN, // Determine tracking mode based on player position, see Npc_UpdateAutoTurn
-    /* 0x1 */ NPC_TRACKING_NONE, // Don't track the target (usually the player)
-    /* 0x2 */ NPC_TRACKING_HEAD_AND_TORSO, // Track target by turning the head and the torso
-    /* 0x3 */ NPC_TRACKING_HEAD, // Track target by turning the head
-    /* 0x4 */ NPC_TRACKING_FULL_BODY // Track target by turning the body, torso and head
+    /* 0x1 */ NPC_TRACKING_NONE,             // Don't track the target (usually the player)
+    /* 0x2 */ NPC_TRACKING_HEAD_AND_TORSO,   // Track target by turning the head and the torso
+    /* 0x3 */ NPC_TRACKING_HEAD,             // Track target by turning the head
+    /* 0x4 */ NPC_TRACKING_FULL_BODY         // Track target by turning the body, torso and head
 } NpcTrackingMode;
 
 typedef struct NpcInteractInfo {
@@ -578,34 +593,27 @@ typedef struct NpcInteractInfo {
 
 // Converts a number of bits to a bitmask, helper for params macros
 // e.g. 3 becomes 0b111 (7)
-#define NBITS_TO_MASK(n) \
-    ((1 << (n)) - 1)
+#define NBITS_TO_MASK(n) ((1 << (n)) - 1)
 
 // Extracts the `n`-bit value at position `s` in `p`, shifts then masks
 // Unsigned variant, no possibility of sign extension
-#define PARAMS_GET_U(p, s, n) \
-    (((p) >> (s)) & NBITS_TO_MASK(n))
+#define PARAMS_GET_U(p, s, n) (((p) >> (s)) & NBITS_TO_MASK(n))
 
 // Extracts the `n`-bit value at position `s` in `p`, masks then shifts
 // Signed variant, possibility of sign extension
-#define PARAMS_GET_S(p, s, n) \
-    (((p) & (NBITS_TO_MASK(n) << (s))) >> (s))
+#define PARAMS_GET_S(p, s, n) (((p) & (NBITS_TO_MASK(n) << (s))) >> (s))
 
 // Extracts all bits past position `s` in `p`
-#define PARAMS_GET_NOMASK(p, s) \
-    ((p) >> (s))
+#define PARAMS_GET_NOMASK(p, s) ((p) >> (s))
 
 // Extracts the `n`-bit value at position `s` in `p` without shifting it from its current position
-#define PARAMS_GET_NOSHIFT(p, s, n) \
-    ((p) & (NBITS_TO_MASK(n) << (s)))
+#define PARAMS_GET_NOSHIFT(p, s, n) ((p) & (NBITS_TO_MASK(n) << (s)))
 
 // Moves the `n`-bit value `p` to bit position `s` for building actor parameters by OR-ing these together
-#define PARAMS_PACK(p, s, n) \
-    (((p) & NBITS_TO_MASK(n)) << (s))
+#define PARAMS_PACK(p, s, n) (((p) & NBITS_TO_MASK(n)) << (s))
 
 // Moves the value `p` to bit position `s` for building actor parameters by OR-ing these together.
-#define PARAMS_PACK_NOMASK(p, s) \
-    ((p) << (s))
+#define PARAMS_PACK_NOMASK(p, s) ((p) << (s))
 
 // Generates a bitmask for bit position `s` of length `n`
 #define PARAMS_MAKE_MASK(s, n) PARAMS_GET_NOSHIFT(~0, s, n)
@@ -652,6 +660,8 @@ void Actor_SetObjectDependency(struct PlayState* play, Actor* actor);
 void Actor_UpdatePos(Actor* actor);
 void Actor_UpdateVelocityXZGravity(Actor* actor);
 void Actor_MoveXZGravity(Actor* actor);
+s32 Actor_GetMovementSpeedAndYaw(Actor* actor, f32* outSpeedTarget, s16* outYawTarget, u8 speedMode, u8 considerSlopes,
+                                 struct PlayState* play);
 void Actor_UpdateVelocityXYZ(Actor* actor);
 void Actor_MoveXYZ(Actor* actor);
 void Actor_SetProjectileSpeed(Actor* actor, f32 speedXYZ);
@@ -715,7 +725,8 @@ void Actor_SetClosestSecretDistance(Actor* actor, struct PlayState* play);
 s32 Actor_IsMounted(struct PlayState* play, Actor* horse);
 u32 Actor_SetRideActor(struct PlayState* play, Actor* horse, s32 mountSide);
 s32 Actor_NotMounted(struct PlayState* play, Actor* horse);
-void Actor_SetPlayerKnockback(struct PlayState* play, Actor* actor, f32 speed, s16 rot, f32 yVelocity, u32 type, u32 damage);
+void Actor_SetPlayerKnockback(struct PlayState* play, Actor* actor, f32 speed, s16 rot, f32 yVelocity, u32 type,
+                              u32 damage);
 void Actor_SetPlayerKnockbackLarge(struct PlayState* play, Actor* actor, f32 speed, s16 rot, f32 yVelocity, u32 damage);
 void Actor_SetPlayerKnockbackLargeNoDamage(struct PlayState* play, Actor* actor, f32 speed, s16 rot, f32 yVelocity);
 void Actor_SetPlayerKnockbackSmall(struct PlayState* play, Actor* actor, f32 speed, s16 rot, f32 yVelocity, u32 damage);

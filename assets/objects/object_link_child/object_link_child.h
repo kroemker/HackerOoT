@@ -82,6 +82,6 @@ extern Gfx gLinkChildZoraMaskDL[65];
 extern Gfx gLinkChildGerudoMaskDL[84];
 extern Gfx gLinkChildBunnyHoodDL[114];
 
-extern FlexSkeletonHeader gLinkChildSkel;
-
 #endif
+
+#include "gLinkChildSkel.h"

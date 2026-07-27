@@ -29,6 +29,8 @@
 #include "skin_matrix.h"
 #include "config.h"
 #include "widescreen.h"
+#include "controller.h"
+#include "seqcmd.h"
 
 #include "overlays/actors/ovl_Arms_Hook/z_arms_hook.h"
 #include "overlays/actors/ovl_En_Part/z_en_part.h"
@@ -1697,8 +1699,7 @@ typedef struct AttentionRangeParams {
     /* 0x4 */ f32 lockOnLeashScale;
 } AttentionRangeParams; // size = 0x8
 
-#define ATTENTION_RANGES(range, lockOnLeashRange) \
-    { SQ(range), (f32)range / lockOnLeashRange }
+#define ATTENTION_RANGES(range, lockOnLeashRange) { SQ(range), (f32)range / lockOnLeashRange }
 
 AttentionRangeParams sAttentionRanges[ATTENTION_RANGE_MAX] = {
     ATTENTION_RANGES(70, 140),        // ATTENTION_RANGE_0
@@ -6353,4 +6354,161 @@ s32 Actor_TrackPlayer(PlayState* play, Actor* actor, Vec3s* headRot, Vec3s* tors
     Actor_TrackPoint(actor, &target, headRot, torsoRot);
 
     return true;
+}
+
+s32 Actor_CalcSpeedAndYawFromControlStick(PlayState* play, Actor* actor, f32* outSpeedTarget, s16* outYawTarget,
+                                          u8 speedMode, u8 considerSlopes) {
+    f32 temp;
+    f32 sinFloorPitch;
+    f32 floorPitchInfluence;
+    f32 speedCap;
+
+    f32 controlStickMagnitude;
+    s16 controlStickAngle;
+
+    Lib_GetControlStickData(&controlStickMagnitude, &controlStickAngle, &play->state.input[0]);
+
+    *outSpeedTarget = controlStickMagnitude;
+    *outYawTarget = controlStickAngle;
+
+    if (speedMode != 0) {
+        *outSpeedTarget -= 20.0f;
+
+        if (*outSpeedTarget < 0.0f) {
+            // If control stick magnitude is below 20, return zero speed.
+            *outSpeedTarget = 0.0f;
+        } else {
+            // Cosine of the control stick magnitude isn't exactly meaningful, but
+            // it happens to give a desirable curve for grounded movement speed relative
+            // to control stick magnitude.
+            temp = 1.0f - Math_CosS(*outSpeedTarget * 450.0f);
+            *outSpeedTarget = (SQ(temp) * 30.0f) + 7.0f;
+        }
+    } else {
+        // Speed increases linearly relative to control stick magnitude
+        *outSpeedTarget *= 0.8f;
+    }
+
+    if (controlStickMagnitude != 0.0f) {
+        if (actor->floorPoly == NULL || !considerSlopes) {
+            floorPitchInfluence = 0.0f;
+        } else {
+            u32 floorType = SurfaceType_GetFloorType(&play->colCtx, actor->floorPoly, actor->floorBgId);
+
+            f32 floorPolyNormalX = COLPOLY_GET_NORMAL(actor->floorPoly->normal.x);
+            f32 invFloorPolyNormalY = 1.0f / COLPOLY_GET_NORMAL(actor->floorPoly->normal.y);
+            f32 floorPolyNormalZ = COLPOLY_GET_NORMAL(actor->floorPoly->normal.z);
+
+            f32 floorPitch = Math_Atan2S(1.0f, (-(floorPolyNormalX * Math_SinS(actor->shape.rot.y)) -
+                                                (floorPolyNormalZ * Math_CosS(actor->shape.rot.y))) *
+                                                   invFloorPolyNormalY);
+
+            sinFloorPitch = Math_SinS(floorPitch);
+            floorPitchInfluence = CLAMP(sinFloorPitch, 0.0f, 0.6f);
+        }
+        speedCap = actor->speedCap;
+
+        *outSpeedTarget = (*outSpeedTarget * 0.14f) - (8.0f * floorPitchInfluence * floorPitchInfluence);
+        *outSpeedTarget = CLAMP(*outSpeedTarget, 0.0f, speedCap);
+
+        return true;
+    }
+
+    return false;
+}
+
+s32 Actor_GetMovementSpeedAndYaw(Actor* actor, f32* outSpeedTarget, s16* outYawTarget, u8 speedMode, u8 considerSlopes,
+                                 PlayState* play) {
+    if (!Actor_CalcSpeedAndYawFromControlStick(play, actor, outSpeedTarget, outYawTarget, speedMode, considerSlopes)) {
+        *outYawTarget = actor->shape.rot.y;
+        return false;
+    } else {
+        *outYawTarget += Camera_GetInputDirYaw(GET_ACTIVE_CAM(play));
+        return true;
+    }
+}
+
+void Actor_HandleZTarget(Actor* actor, PlayState* play) {
+    s32 holdTarget = gSaveContext.zTargetSetting != 0;
+    Camera* mainCamera = Play_GetCamera(play, CAM_ID_MAIN);
+    Actor* arrowActor = play->actorCtx.attention.arrowHoverActor;
+    Actor* targetActor = play->actorCtx.attention.reticleActor;
+
+    if (!CHECK_BTN_ALL(play->state.input[0].cur.button, BTN_Z) && (holdTarget || targetActor == NULL) &&
+        mainCamera->mode != CAM_MODE_NORMAL) {
+        osSyncPrintf("HandleZTarget: disable targeting\n");
+        Camera_RequestMode(mainCamera, CAM_MODE_NORMAL);
+    } else if (targetActor != NULL && (mainCamera->mode == CAM_MODE_NORMAL || mainCamera->mode == CAM_MODE_Z_PARALLEL ||
+                                       mainCamera->target != targetActor)) {
+        osSyncPrintf("HandleZTarget: enable targeting with target: %x\n", targetActor);
+        u32 camMode = !ACTOR_FLAGS_CHECK_ALL(targetActor, ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE)
+                          ? CAM_MODE_Z_TARGET_FRIENDLY
+                          : CAM_MODE_Z_TARGET_UNFRIENDLY;
+        Camera_SetViewParam(Play_GetCamera(play, CAM_ID_MAIN), CAM_VIEW_TARGET, targetActor);
+        Camera_RequestMode(mainCamera, camMode);
+    } else if (CHECK_BTN_ALL(play->state.input[0].cur.button, BTN_Z) && targetActor == NULL &&
+               mainCamera->mode == CAM_MODE_NORMAL) {
+        osSyncPrintf("HandleZTarget: enable targeting without target\n");
+        Camera_RequestMode(mainCamera, CAM_MODE_Z_PARALLEL);
+    }
+}
+
+void Actor_SetPlayerLocation(Actor* actor, PlayState* play, f32 yOffset) {
+    Player* player = GET_PLAYER(play);
+
+    Math_Vec3f_Copy(&player->actor.world.pos, &actor->world.pos);
+    Math_Vec3f_Copy(&player->actor.home.pos, &actor->world.pos);
+    Math_Vec3f_Copy(&player->actor.prevPos, &actor->world.pos);
+    player->actor.world.rot.x = actor->world.rot.x;
+    player->actor.world.rot.y = actor->world.rot.y;
+    player->actor.world.rot.z = actor->world.rot.z;
+    player->actor.shape.rot.x = actor->shape.rot.x;
+    player->actor.shape.rot.y = actor->shape.rot.y;
+    player->actor.shape.rot.z = actor->shape.rot.z;
+    Actor_SetFocus(&player->actor, yOffset);
+}
+
+void Actor_TriggerDynapolyIfPossible(Actor* actor, PlayState* play) {
+    CollisionPoly* floorPoly = actor->floorPoly;
+    if (!(actor->bgCheckFlags & BGCHECKFLAG_GROUND) || (floorPoly == NULL)) {
+        return;
+    }
+
+    if (actor->floorBgId == BGCHECK_SCENE) {
+        Environment_ChangeLightSetting(play, SurfaceType_GetLightSetting(&play->colCtx, floorPoly, actor->floorBgId));
+    } else {
+        DynaPoly_SetPlayerOnTop(&play->colCtx, actor->floorBgId);
+    }
+}
+
+void Actor_CheckVoidOut(Actor* actor, PlayState* play) {
+    Player* player = GET_PLAYER(play);
+
+    if (actor->bgCheckFlags & BGCHECKFLAG_GROUND) {
+        s32 floorType = SurfaceType_GetFloorType(&play->colCtx, actor->floorPoly, actor->floorBgId);
+        if (floorType == FLOOR_TYPE_9) {
+            player->actor.freezeTimer = actor->freezeTimer = 50;
+            Play_TriggerVoidOut(play);
+            SEQCMD_STOP_SEQUENCE(SEQ_PLAYER_BGM_MAIN, 0);
+            play->transitionType = TRANS_TYPE_FADE_BLACK;
+            Sfx_PlaySfxCentered2(NA_SE_OC_ABYSS);
+        }
+    }
+}
+
+void Actor_CheckExit(Actor* actor, PlayState* play) {
+    Player* player = GET_PLAYER(play);
+
+    if (actor->bgCheckFlags & BGCHECKFLAG_GROUND) {
+        s32 exitIndex = SurfaceType_GetExitIndex(&play->colCtx, actor->floorPoly, actor->floorBgId);
+        if (exitIndex != 0) {
+            play->nextEntranceIndex = play->exitList[exitIndex - 1];
+            gSaveContext.retainWeatherMode = true;
+            Scene_SetTransitionForNextEntrance(play);
+            play->transitionTrigger = TRANS_TRIGGER_START;
+            gSaveContext.entranceSpeed = actor->speed;
+            Interface_ChangeHudVisibilityMode(HUD_VISIBILITY_NOTHING_ALT);
+            player->stateFlags1 |= PLAYER_STATE1_0 | PLAYER_STATE1_29;
+        }
+    }
 }

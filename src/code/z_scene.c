@@ -217,6 +217,10 @@ BAD_RETURN(s32) Scene_CommandPlayerEntryList(PlayState* play, SceneCmd* cmd) {
 
     gActorOverlayTable[playerEntry->id].profile->objectId = linkObjectId;
     Object_SpawnPersistent(&play->objectCtx, linkObjectId);
+
+    // HackerOoT: keep Baby Gohma's object resident in every scene so the D-Left transformation
+    // (see `Player_StartBabyGohmaTransform`) can spawn `TransformBabyGohma` anywhere, anytime.
+    Object_SpawnPersistent(&play->objectCtx, OBJECT_GOL);
 }
 
 BAD_RETURN(s32) Scene_CommandActorEntryList(PlayState* play, SceneCmd* cmd) {

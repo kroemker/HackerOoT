@@ -12192,6 +12192,38 @@ void Player_UpdateCommon(Player* this, PlayState* play, Input* input) {
 s32 Player_UpdateNoclip(Player* this, PlayState* play);
 #endif
 
+/**
+ * Transforms Player into the `TransformBabyGohma` actor: spawns it in Player's place, then hides
+ * and freezes Player (see `Player_Update`) so the spawned actor can be controlled directly while
+ * the (invisible) Player actor keeps the camera/HUD/etc. working as normal.
+ */
+void Player_StartBabyGohmaTransform(PlayState* play, Player* this) {
+    Actor* gohma = Actor_Spawn(&play->actorCtx, play, ACTOR_TRANSFORM_BABY_GOHMA, this->actor.world.pos.x,
+                               this->actor.world.pos.y, this->actor.world.pos.z, 0, this->actor.shape.rot.y, 0, 0);
+
+    if (gohma != NULL) {
+        this->transformedActor = gohma;
+        this->stateFlags2 |= PLAYER_STATE2_29;
+        this->actor.shape.shadowDraw = NULL;
+    }
+    // If the spawn fails (e.g. object not resident, actor limit reached), do nothing;
+    // Link remains visible and in control.
+}
+
+/**
+ * Reverts a `Player_StartBabyGohmaTransform` transformation: kills the transformation actor (if
+ * still alive) and restores Player to its normal visible, controllable state.
+ */
+void Player_EndBabyGohmaTransform(PlayState* play, Player* this) {
+    if ((this->transformedActor != NULL) && (this->transformedActor->update != NULL)) {
+        Actor_Kill(this->transformedActor);
+    }
+
+    this->transformedActor = NULL;
+    this->stateFlags2 &= ~PLAYER_STATE2_29;
+    this->actor.shape.shadowDraw = ActorShadow_DrawFeet;
+}
+
 void Player_Update(Actor* thisx, PlayState* play) {
     Player* this = (Player*)thisx;
     s32 dogParams;
@@ -12233,20 +12265,35 @@ void Player_Update(Actor* thisx, PlayState* play) {
         Player_DetachHeldActor(play, this);
     }
 
-    if (this->stateFlags1 & (PLAYER_STATE1_5 | PLAYER_STATE1_29)) {
-        bzero(&input, sizeof(input));
-    } else {
-        input = play->state.input[0];
-
-        if (this->textboxBtnCooldownTimer != 0) {
-            // Prevent the usage of A/B/C-up.
-            // Helps avoid accidental inputs when mashing to close the final textbox.
-            input.cur.button &= ~(BTN_A | BTN_B | BTN_CUP);
-            input.press.button &= ~(BTN_A | BTN_B | BTN_CUP);
+    if (CHECK_BTN_ALL(play->state.input[0].press.button, BTN_DLEFT)) {
+        if (this->transformedActor == NULL) {
+            Player_StartBabyGohmaTransform(play, this);
+        } else {
+            Player_EndBabyGohmaTransform(play, this);
         }
     }
 
-    Player_UpdateCommon(this, play, &input);
+    // Auto-revert if the transformation actor despawned/died on its own (e.g. ran out of health)
+    if ((this->transformedActor != NULL) && (this->transformedActor->update == NULL)) {
+        Player_EndBabyGohmaTransform(play, this);
+    }
+
+    if (this->transformedActor == NULL) {
+        if (this->stateFlags1 & (PLAYER_STATE1_5 | PLAYER_STATE1_29)) {
+            bzero(&input, sizeof(input));
+        } else {
+            input = play->state.input[0];
+
+            if (this->textboxBtnCooldownTimer != 0) {
+                // Prevent the usage of A/B/C-up.
+                // Helps avoid accidental inputs when mashing to close the final textbox.
+                input.cur.button &= ~(BTN_A | BTN_B | BTN_CUP);
+                input.press.button &= ~(BTN_A | BTN_B | BTN_CUP);
+            }
+        }
+
+        Player_UpdateCommon(this, play, &input);
+    }
 
 #if DEBUG_FEATURES
 skip_update:;

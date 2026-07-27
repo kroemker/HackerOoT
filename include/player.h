@@ -996,7 +996,10 @@ typedef struct Player {
     /* 0x0A86 */ s8 unk_A86;
     /* 0x0A87 */ u8 unk_A87;
     /* 0x0A88 */ Vec3f unk_A88; // previous body part 0 position
-} Player; // size = 0xA94
+    // HackerOoT: non-NULL while Player is hidden/frozen and possessed by a transformation actor
+    // (see `Player_StartBabyGohmaTransform`/`Player_EndBabyGohmaTransform`)
+    Actor* transformedActor;
+} Player; // size = 0xA98
 
 // z_player_lib.c
 void Player_SetBootData(struct PlayState* play, Player* this);

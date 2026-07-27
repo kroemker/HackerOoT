@@ -1027,8 +1027,7 @@ void* sMouthTextures[PLAYER_MOUTH_MAX] = {
 };
 #else
 // Defining `AVOID_UB` will use a 2D array instead and properly use the child link pointers to allow for shifting.
-void* sEyeTextures[][PLAYER_EYES_MAX] = {
-    {
+void* sEyeTextures[][PLAYER_EYES_MAX] = {{
         gLinkAdultEyesOpenTex,    // PLAYER_EYES_OPEN
         gLinkAdultEyesHalfTex,    // PLAYER_EYES_HALF
         gLinkAdultEyesClosedfTex, // PLAYER_EYES_CLOSED
@@ -1038,38 +1037,29 @@ void* sEyeTextures[][PLAYER_EYES_MAX] = {
         gLinkAdultEyesDownTex,    // PLAYER_EYES_DOWN
         gLinkAdultEyesWincingTex, // PLAYER_EYES_WINCING
     },
-    {
-        gLinkChildEyesOpenTex,    // PLAYER_EYES_OPEN
-        gLinkChildEyesHalfTex,    // PLAYER_EYES_HALF
-        gLinkChildEyesClosedfTex, // PLAYER_EYES_CLOSED
-        /*
-        Note `PLAYER_EYES_RIGHT` corresponds to the "left" eyes texture, and vice-versa with the "right" eyes textures.
-        This is because on the textures Link appears to look left/right as if facing outwards the screen,
-        but the image is mirrored by the child Link model's UVs, reversing the direction actually looked in,
-        which results in-game in the correct eyes direction.
-        */
-        gLinkChildEyesLeftTex,    // PLAYER_EYES_RIGHT
-        gLinkChildEyesRightTex,   // PLAYER_EYES_LEFT
-        gLinkChildEyesWideTex,    // PLAYER_EYES_WIDE
-        gLinkChildEyesDownTex,    // PLAYER_EYES_DOWN
-        gLinkChildEyesWincingTex, // PLAYER_EYES_WINCING
-    },
-};
+{
+    gLinkChildSkel_gLinkChildEyesOpenTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    gLinkChildSkel_gLinkChildEyesHalfTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    gLinkChildSkel_gLinkChildEyesClosedfTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    gLinkChildSkel_gLinkChildEyesLeftTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    gLinkChildSkel_gLinkChildEyesRightTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    gLinkChildSkel_gLinkChildEyesWideTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    gLinkChildSkel_gLinkChildEyesDownTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    gLinkChildSkel_gLinkChildEyesWincingTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+ }};
 
-void* sMouthTextures[][PLAYER_MOUTH_MAX] = {
-    {
+void* sMouthTextures[][PLAYER_MOUTH_MAX] = {{
         gLinkAdultMouthClosedTex, // PLAYER_MOUTH_CLOSED
         gLinkAdultMouthHalfTex,   // PLAYER_MOUTH_HALF
         gLinkAdultMouthOpenTex,   // PLAYER_MOUTH_OPEN
         gLinkAdultMouthSmileTex,  // PLAYER_MOUTH_SMILE
     },
-    {
-        gLinkChildMouthClosedTex, // PLAYER_MOUTH_CLOSED
-        gLinkChildMouthHalfTex,   // PLAYER_MOUTH_HALF
-        gLinkChildMouthOpenTex,   // PLAYER_MOUTH_OPEN
-        gLinkChildMouthSmileTex,  // PLAYER_MOUTH_SMILE
-    },
-};
+{
+    gLinkChildSkel_gLinkChildMouthClosedTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    gLinkChildSkel_gLinkChildMouthHalfTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    gLinkChildSkel_gLinkChildMouthOpenTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    gLinkChildSkel_gLinkChildMouthSmileTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+ }};
 #endif
 
 Color_RGB8 sTunicColors[PLAYER_TUNIC_MAX] = {
