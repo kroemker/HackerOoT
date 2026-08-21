@@ -2640,6 +2640,160 @@ s32 Player_GetItemOnButton(PlayState* play, s32 index) {
     }
 }
 
+/************************************************************
+ * HackerOoT: player transformations
+ *
+ * Pressing a transformation button (see `Player_CheckTransform`) fades the screen to a gray fill
+ * (`Player_Action_Transform`), then loads the creature's object into the dedicated transform
+ * space, spawns the transformation actor in Player's place and hides/freezes Player. While
+ * transformed (`Player_Action_Transformed`), the spawned actor is controlled directly and keeps
+ * the (invisible) Player actor glued to its position so camera/HUD/etc. keep working. Pressing
+ * the button again fades back (`Player_Action_TransformBack` -> `Player_Action_TransformEnd`)
+ * and restores Player.
+ ************************************************************/
+
+s32 Player_SetupAction(PlayState* play, Player* this, PlayerActionFunc actionFunc, s32 flags);
+void func_8083A060(Player* this, PlayState* play);
+void func_8083C0E8(Player* this, PlayState* play);
+
+void Player_Action_Transform(Player* this, PlayState* play);
+void Player_Action_Transformed(Player* this, PlayState* play);
+void Player_Action_TransformBack(Player* this, PlayState* play);
+void Player_Action_TransformEnd(Player* this, PlayState* play);
+
+// Alpha added/removed per frame while the screen fill fades in/out during a transformation
+#define TRANSFORM_SCREEN_FILL_SPEED 50
+
+void Player_SetupTransformBack(Player* this, PlayState* play) {
+    Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
+    Player_SetupAction(play, this, Player_Action_TransformBack, 0);
+    this->stateFlags3 |= PLAYER_STATE3_TRANSFORMING;
+    this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMED;
+}
+
+void Player_InitiateTransformation(Player* this, PlayState* play, s16 transformActorId, s16 objectId, u16 sfxId) {
+    if ((this->transformActor != NULL) && (this->transformActor->id == transformActorId)) {
+        // Already in this form: transform back into Link
+        Player_SetupTransformBack(this, play);
+    } else {
+        Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
+        Player_PlaySfx(this, sfxId);
+        Player_SetupAction(play, this, Player_Action_Transform, 0);
+        this->transformActorId = transformActorId;
+        this->transformObjectId = objectId;
+        this->stateFlags3 |= PLAYER_STATE3_TRANSFORMING;
+    }
+}
+
+s32 Player_CheckTransform(Player* this, PlayState* play) {
+    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DLEFT)) {
+        Player_InitiateTransformation(this, play, ACTOR_TRANSFORM_BABY_GOHMA, OBJECT_GOL, NA_SE_EN_GOMA_BJR_CRY);
+        return true;
+    }
+    return false;
+}
+
+void Player_DisableTransform(Player* this, PlayState* play) {
+    this->stateFlags2 &= ~(PLAYER_STATE2_29 | PLAYER_STATE2_15); // re-enable player draw + updating
+    this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMED;
+    play->interfaceCtx.unk_1FA = false; // clear B button text
+
+    if ((this->transformActor != NULL) && (this->transformActor->update != NULL)) {
+        Actor_Kill(this->transformActor);
+    }
+    this->transformActor = NULL;
+    this->actor.shape.shadowDraw = ActorShadow_DrawFeet;
+}
+
+void Player_Action_TransformEnd(Player* this, PlayState* play) {
+    play->envCtx.screenFillColor[3] = (play->envCtx.screenFillColor[3] > TRANSFORM_SCREEN_FILL_SPEED)
+                                          ? play->envCtx.screenFillColor[3] - TRANSFORM_SCREEN_FILL_SPEED
+                                          : 0;
+
+    if (play->envCtx.screenFillColor[3] == 0) {
+        this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMING;
+        play->envCtx.fillScreen = false;
+        func_8083C0E8(this, play); // return to standing still
+    }
+}
+
+void Player_Action_TransformBack(Player* this, PlayState* play) {
+    this->actor.speed = this->speedXZ = 0.0f;
+    play->envCtx.fillScreen = true;
+    play->envCtx.screenFillColor[0] = 160;
+    play->envCtx.screenFillColor[1] = 160;
+    play->envCtx.screenFillColor[2] = 160;
+    play->envCtx.screenFillColor[3] = (play->envCtx.screenFillColor[3] < 255 - TRANSFORM_SCREEN_FILL_SPEED)
+                                          ? play->envCtx.screenFillColor[3] + TRANSFORM_SCREEN_FILL_SPEED
+                                          : 255;
+
+    if (play->envCtx.screenFillColor[3] == 255) {
+        Player_DisableTransform(this, play);
+        Player_SetupAction(play, this, Player_Action_TransformEnd, 0);
+    }
+}
+
+void Player_Action_Transformed(Player* this, PlayState* play) {
+    // Fade the screen fill back out after the creature has been spawned
+    play->envCtx.screenFillColor[3] = (play->envCtx.screenFillColor[3] > TRANSFORM_SCREEN_FILL_SPEED)
+                                          ? play->envCtx.screenFillColor[3] - TRANSFORM_SCREEN_FILL_SPEED
+                                          : 0;
+    if (play->envCtx.screenFillColor[3] != 0) {
+        return;
+    }
+    play->envCtx.fillScreen = false;
+
+    if ((this->transformActor == NULL) || (this->transformActor->update == NULL)) {
+        // The creature despawned/died on its own (e.g. ran out of health): revert instantly
+        Player_DisableTransform(this, play);
+        func_8083A060(this, play); // return to standing still
+    } else {
+        // Transform back or switch directly to another transformation; the current creature stays
+        // alive until the fade fully covers the screen (it is killed in `Player_DisableTransform`
+        // or `Player_Action_Transform` respectively)
+        Player_CheckTransform(this, play);
+    }
+}
+
+void Player_Action_Transform(Player* this, PlayState* play) {
+    this->actor.speed = this->speedXZ = 0.0f;
+    play->envCtx.fillScreen = true;
+    play->envCtx.screenFillColor[0] = 160;
+    play->envCtx.screenFillColor[1] = 160;
+    play->envCtx.screenFillColor[2] = 160;
+    play->envCtx.screenFillColor[3] = (play->envCtx.screenFillColor[3] < 255 - TRANSFORM_SCREEN_FILL_SPEED)
+                                          ? play->envCtx.screenFillColor[3] + TRANSFORM_SCREEN_FILL_SPEED
+                                          : 255;
+
+    if (play->envCtx.screenFillColor[3] == 255) {
+        // When switching directly between transformations, remove the old creature before its
+        // object is evicted from the transform space
+        if ((this->transformActor != NULL) && (this->transformActor->update != NULL)) {
+            Actor_Kill(this->transformActor);
+        }
+        this->transformActor = NULL;
+
+        Object_LoadTransform(&play->objectCtx, this->transformObjectId);
+        this->transformActor =
+            Actor_Spawn(&play->actorCtx, play, this->transformActorId, this->actor.world.pos.x,
+                        this->actor.world.pos.y, this->actor.world.pos.z, this->actor.world.rot.x,
+                        this->actor.world.rot.y, this->actor.world.rot.z, 0);
+
+        if (this->transformActor != NULL) {
+            this->stateFlags2 |= PLAYER_STATE2_29 | PLAYER_STATE2_15; // disable player draw + most updating
+            this->stateFlags3 |= PLAYER_STATE3_TRANSFORMED;
+            this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMING;
+            this->actor.shape.shadowDraw = NULL;
+            Player_SetupAction(play, this, Player_Action_Transformed, 0);
+        } else {
+            // Spawn failed (e.g. actor limit reached): fade back out with Link still in control
+            Sfx_PlaySfxCentered(NA_SE_SY_ERROR);
+            Player_DisableTransform(this, play);
+            Player_SetupAction(play, this, Player_Action_TransformEnd, 0);
+        }
+    }
+}
+
 /**
  * Handles the high level item usage and changing process based on the B and C buttons.
  *
@@ -2665,6 +2819,11 @@ void Player_ProcessItemButtons(Player* this, PlayState* play) {
     }
 
     if (!(this->stateFlags1 & (PLAYER_STATE1_CARRYING_ACTOR | PLAYER_STATE1_29)) && !func_8008F128(this)) {
+        // HackerOoT: transformation buttons take priority over item usage
+        if (Player_CheckTransform(this, play)) {
+            return;
+        }
+
         if (this->itemAction >= PLAYER_IA_FISHING_POLE) {
             if (!Player_ItemIsInUse(this, B_BTN_ITEM) && !Player_ItemIsInUse(this, C_BTN_ITEM(0)) &&
                 !Player_ItemIsInUse(this, C_BTN_ITEM(1)) && !Player_ItemIsInUse(this, C_BTN_ITEM(2))) {
@@ -10758,6 +10917,9 @@ void Player_Init(Actor* thisx, PlayState* play2) {
     thisx->room = -1;
     this->ageProperties = &sAgeProperties[gSaveContext.save.linkAge];
     this->itemAction = this->heldItemAction = -1;
+
+    // HackerOoT: any transformation ends when Player respawns (scene transition, void out, ...)
+    this->transformActor = NULL;
     this->heldItemId = ITEM_NONE;
 
     Player_UseItem(play, this, ITEM_NONE);
@@ -10946,6 +11108,11 @@ static f32 D_80854784[] = { 120.0f, 240.0f, 360.0f };
  *     - Navi C-up icon for hints
  */
 void Player_UpdateInterface(PlayState* play, Player* this) {
+    // HackerOoT: the transformation actor drives the A/B button actions itself
+    if (this->stateFlags3 & (PLAYER_STATE3_TRANSFORMED | PLAYER_STATE3_TRANSFORMING)) {
+        return;
+    }
+
     if ((Message_GetState(&play->msgCtx) == TEXT_STATE_NONE) && (this->actor.category == ACTORCAT_PLAYER)) {
         Actor* heldActor = this->heldActor;
         Actor* interactRangeActor = this->interactRangeActor;
@@ -11782,6 +11949,18 @@ void Player_UpdateCommon(Player* this, PlayState* play, Input* input) {
 
     sControlInput = input;
 
+    // HackerOoT: while transformed (or mid-fade), only run the transform action function; the
+    // creature actor handles movement/collision/interface itself
+    if (this->stateFlags3 & (PLAYER_STATE3_TRANSFORMED | PLAYER_STATE3_TRANSFORMING)) {
+        this->actionFunc(this, play);
+
+        if (this->csAction == PLAYER_CSACTION_7) {
+            this->prevCsAction = PLAYER_CSACTION_NONE;
+            this->csAction = PLAYER_CSACTION_NONE;
+        }
+        return;
+    }
+
     if (this->unk_A86 < 0) {
         this->unk_A86++;
         if (this->unk_A86 == 0) {
@@ -12192,38 +12371,6 @@ void Player_UpdateCommon(Player* this, PlayState* play, Input* input) {
 s32 Player_UpdateNoclip(Player* this, PlayState* play);
 #endif
 
-/**
- * Transforms Player into the `TransformBabyGohma` actor: spawns it in Player's place, then hides
- * and freezes Player (see `Player_Update`) so the spawned actor can be controlled directly while
- * the (invisible) Player actor keeps the camera/HUD/etc. working as normal.
- */
-void Player_StartBabyGohmaTransform(PlayState* play, Player* this) {
-    Actor* gohma = Actor_Spawn(&play->actorCtx, play, ACTOR_TRANSFORM_BABY_GOHMA, this->actor.world.pos.x,
-                               this->actor.world.pos.y, this->actor.world.pos.z, 0, this->actor.shape.rot.y, 0, 0);
-
-    if (gohma != NULL) {
-        this->transformedActor = gohma;
-        this->stateFlags2 |= PLAYER_STATE2_29;
-        this->actor.shape.shadowDraw = NULL;
-    }
-    // If the spawn fails (e.g. object not resident, actor limit reached), do nothing;
-    // Link remains visible and in control.
-}
-
-/**
- * Reverts a `Player_StartBabyGohmaTransform` transformation: kills the transformation actor (if
- * still alive) and restores Player to its normal visible, controllable state.
- */
-void Player_EndBabyGohmaTransform(PlayState* play, Player* this) {
-    if ((this->transformedActor != NULL) && (this->transformedActor->update != NULL)) {
-        Actor_Kill(this->transformedActor);
-    }
-
-    this->transformedActor = NULL;
-    this->stateFlags2 &= ~PLAYER_STATE2_29;
-    this->actor.shape.shadowDraw = ActorShadow_DrawFeet;
-}
-
 void Player_Update(Actor* thisx, PlayState* play) {
     Player* this = (Player*)thisx;
     s32 dogParams;
@@ -12265,35 +12412,20 @@ void Player_Update(Actor* thisx, PlayState* play) {
         Player_DetachHeldActor(play, this);
     }
 
-    if (CHECK_BTN_ALL(play->state.input[0].press.button, BTN_DLEFT)) {
-        if (this->transformedActor == NULL) {
-            Player_StartBabyGohmaTransform(play, this);
-        } else {
-            Player_EndBabyGohmaTransform(play, this);
+    if (this->stateFlags1 & (PLAYER_STATE1_5 | PLAYER_STATE1_29)) {
+        bzero(&input, sizeof(input));
+    } else {
+        input = play->state.input[0];
+
+        if (this->textboxBtnCooldownTimer != 0) {
+            // Prevent the usage of A/B/C-up.
+            // Helps avoid accidental inputs when mashing to close the final textbox.
+            input.cur.button &= ~(BTN_A | BTN_B | BTN_CUP);
+            input.press.button &= ~(BTN_A | BTN_B | BTN_CUP);
         }
     }
 
-    // Auto-revert if the transformation actor despawned/died on its own (e.g. ran out of health)
-    if ((this->transformedActor != NULL) && (this->transformedActor->update == NULL)) {
-        Player_EndBabyGohmaTransform(play, this);
-    }
-
-    if (this->transformedActor == NULL) {
-        if (this->stateFlags1 & (PLAYER_STATE1_5 | PLAYER_STATE1_29)) {
-            bzero(&input, sizeof(input));
-        } else {
-            input = play->state.input[0];
-
-            if (this->textboxBtnCooldownTimer != 0) {
-                // Prevent the usage of A/B/C-up.
-                // Helps avoid accidental inputs when mashing to close the final textbox.
-                input.cur.button &= ~(BTN_A | BTN_B | BTN_CUP);
-                input.press.button &= ~(BTN_A | BTN_B | BTN_CUP);
-            }
-        }
-
-        Player_UpdateCommon(this, play, &input);
-    }
+    Player_UpdateCommon(this, play, &input);
 
 #if DEBUG_FEATURES
 skip_update:;

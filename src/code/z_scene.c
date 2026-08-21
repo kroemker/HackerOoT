@@ -95,8 +95,36 @@ void Object_InitContext(PlayState* play, ObjectContext* objectCtx) {
         GAME_STATE_ALLOC(&play->state, spaceSize, "../z_scene.c", 219);
     objectCtx->spaceEnd = (void*)((uintptr_t)objectCtx->spaceStart + spaceSize);
 
+    // HackerOoT: reserve space for on-demand loading of transformation objects (see `Object_LoadTransform`)
+    objectCtx->transformSpaceStart = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, "../z_scene.c", 219);
+    objectCtx->loadedTransformObjectId = -1;
+
     objectCtx->mainKeepSlot = Object_SpawnPersistent(objectCtx, OBJECT_GAMEPLAY_KEEP);
     gSegments[4] = OS_K0_TO_PHYSICAL(objectCtx->slots[objectCtx->mainKeepSlot].segment);
+}
+
+/**
+ * HackerOoT: Synchronously loads `objectId` into the dedicated transform object space.
+ * Actors spawned with `TRANSFORM_OBJECT_SLOT` as their object slot (see `Actor_Spawn`) use this
+ * space as their object segment, independently of the scene's object list.
+ */
+void Object_LoadTransform(ObjectContext* objectCtx, s16 objectId) {
+    u32 size;
+
+    if (objectCtx->loadedTransformObjectId == objectId) {
+        return;
+    }
+
+    size = gObjectTable[objectId].vromEnd - gObjectTable[objectId].vromStart;
+
+    PRINTF("LOAD TRANSFORM OBJECT[%d] SIZE=%fK MAX_SIZE=%fK\n", objectId, size / 1024.0f,
+           TRANSFORM_OBJECT_SPACE / 1024.0f);
+
+    ASSERT(size <= TRANSFORM_OBJECT_SPACE, "size <= TRANSFORM_OBJECT_SPACE", __FILE__, __LINE__);
+
+    DMA_REQUEST_SYNC(objectCtx->transformSpaceStart, gObjectTable[objectId].vromStart, size, __FILE__, __LINE__);
+
+    objectCtx->loadedTransformObjectId = objectId;
 }
 
 void Object_UpdateEntries(ObjectContext* objectCtx) {
@@ -137,6 +165,11 @@ s32 Object_GetSlot(ObjectContext* objectCtx, s16 objectId) {
 }
 
 s32 Object_IsLoaded(ObjectContext* objectCtx, s32 slot) {
+    // HackerOoT: the transform slot is loaded synchronously, outside of the regular slots
+    if (slot == TRANSFORM_OBJECT_SLOT) {
+        return objectCtx->loadedTransformObjectId >= 0;
+    }
+
     if (objectCtx->slots[slot].id > 0) {
         return true;
     } else {
@@ -217,10 +250,6 @@ BAD_RETURN(s32) Scene_CommandPlayerEntryList(PlayState* play, SceneCmd* cmd) {
 
     gActorOverlayTable[playerEntry->id].profile->objectId = linkObjectId;
     Object_SpawnPersistent(&play->objectCtx, linkObjectId);
-
-    // HackerOoT: keep Baby Gohma's object resident in every scene so the D-Left transformation
-    // (see `Player_StartBabyGohmaTransform`) can spawn `TransformBabyGohma` anywhere, anytime.
-    Object_SpawnPersistent(&play->objectCtx, OBJECT_GOL);
 }
 
 BAD_RETURN(s32) Scene_CommandActorEntryList(PlayState* play, SceneCmd* cmd) {

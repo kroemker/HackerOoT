@@ -383,6 +383,9 @@ void TransformBabyGohma_Update(Actor* thisx, PlayState* play) {
     TransformBabyGohma* this = (TransformBabyGohma*)thisx;
     Player* player = GET_PLAYER(play);
 
+    // Keep the (hidden, frozen) Player actor glued to this actor's position/facing each frame,
+    // so the existing Player-locked camera keeps following the visible, controlled creature.
+    Actor_SetPlayerLocation(&this->actor, play, 20.0f);
     Actor_SetFocus(&this->actor, 20.0f);
 
     Math_SmoothStepToF(&this->actor.scale.x, 0.01f, 0.5f, 0.00075f, 0.000001f);
@@ -390,6 +393,7 @@ void TransformBabyGohma_Update(Actor* thisx, PlayState* play) {
     Math_SmoothStepToF(&this->actor.scale.z, 0.01f, 0.5f, 0.00075f, 0.000001f);
 
     TransformBabyGohma_UpdateHit(this, play);
+    Actor_HandleZTarget(&this->actor, play);
     Actor_MoveXZGravity(&this->actor);
     Actor_UpdateBgCheckInfo(play, &this->actor, 40.0f, 30.0f, 100.0f,
                             UPDBGCHECKINFO_FLAG_0 | UPDBGCHECKINFO_FLAG_1 | UPDBGCHECKINFO_FLAG_2);
@@ -401,6 +405,9 @@ void TransformBabyGohma_Update(Actor* thisx, PlayState* play) {
     }
     TransformBabyGohma_UpdateWaterMovement(this, play);
     TransformBabyGohma_UpdateEyeEnvColor(this);
+    Actor_TriggerDynapolyIfPossible(&this->actor, play);
+    Actor_CheckVoidOut(&this->actor, play);
+    Actor_CheckExit(&this->actor, play);
 
     if (player->csAction != PLAYER_CSACTION_NONE && this->actionFunc != TransformBabyGohma_Action_Cutscene) {
         TransformBabyGohma_SetupAction(this, play, TransformBabyGohma_Action_Cutscene);
@@ -418,13 +425,6 @@ void TransformBabyGohma_Update(Actor* thisx, PlayState* play) {
     if ((this->actionFunc == TransformBabyGohma_Action_Jump) ||
         (this->actionFunc == TransformBabyGohma_Action_HeadAttack)) {
         CollisionCheck_SetAT(play, &play->colChkCtx, &this->attackCol.base);
-    }
-
-    // Keep the (hidden, frozen) Player actor glued to this actor's position/facing each frame,
-    // so the existing Player-locked camera keeps following the visible, controlled creature.
-    if (player->transformedActor == &this->actor) {
-        player->actor.world.pos = this->actor.world.pos;
-        player->actor.world.rot.y = player->actor.shape.rot.y = this->actor.world.rot.y;
     }
 }
 

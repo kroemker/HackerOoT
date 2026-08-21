@@ -943,8 +943,14 @@ void Actor_SetScale(Actor* actor, f32 scale) {
     actor->scale.x = scale;
 }
 
+// HackerOoT: transformation actors live in the dedicated transform object space instead of a regular slot
+void* Actor_GetObjectSegment(PlayState* play, Actor* actor) {
+    return (actor->objectSlot == TRANSFORM_OBJECT_SLOT) ? play->objectCtx.transformSpaceStart
+                                                        : play->objectCtx.slots[actor->objectSlot].segment;
+}
+
 void Actor_SetObjectDependency(PlayState* play, Actor* actor) {
-    gSegments[6] = OS_K0_TO_PHYSICAL(play->objectCtx.slots[actor->objectSlot].segment);
+    gSegments[6] = OS_K0_TO_PHYSICAL(Actor_GetObjectSegment(play, actor));
 }
 
 void Actor_Init(Actor* actor, PlayState* play) {
@@ -2602,9 +2608,6 @@ void Actor_FaultPrint(Actor* actor, char* command) {
 void Actor_Draw(PlayState* play, Actor* actor) {
     FaultClient faultClient;
     Lights* lights;
-#if PLATFORM_IQUE
-    ObjectEntry* slots;
-#endif
 
     Fault_AddClient(&faultClient, Actor_FaultPrint, actor, "Actor_draw");
 
@@ -2629,15 +2632,8 @@ void Actor_Draw(PlayState* play, Actor* actor) {
     Matrix_Scale(actor->scale.x, actor->scale.y, actor->scale.z, MTXMODE_APPLY);
     Actor_SetObjectDependency(play, actor);
 
-#if !PLATFORM_IQUE
-    gSPSegment(POLY_OPA_DISP++, 0x06, play->objectCtx.slots[actor->objectSlot].segment);
-    gSPSegment(POLY_XLU_DISP++, 0x06, play->objectCtx.slots[actor->objectSlot].segment);
-#else
-    // Workaround for EGCS internal compiler error (see docs/compilers.md)
-    slots = play->objectCtx.slots;
-    gSPSegment(POLY_OPA_DISP++, 0x06, slots[actor->objectSlot].segment);
-    gSPSegment(POLY_XLU_DISP++, 0x06, slots[actor->objectSlot].segment);
-#endif
+    gSPSegment(POLY_OPA_DISP++, 0x06, Actor_GetObjectSegment(play, actor));
+    gSPSegment(POLY_XLU_DISP++, 0x06, Actor_GetObjectSegment(play, actor));
 
     if (actor->colorFilterTimer != 0) {
         Color_RGBA8 color = { 0, 0, 0, 255 };
@@ -3195,6 +3191,24 @@ void Actor_FreeOverlay(ActorOverlay* actorOverlay) {
     PRINTF_RST();
 }
 
+// HackerOoT: actors the player can transform into. Their objects are loaded on demand into the
+// dedicated transform object space (see `Object_LoadTransform`) instead of a regular object slot.
+static s16 sTransformActors[] = {
+    ACTOR_TRANSFORM_BABY_GOHMA,
+};
+
+s32 Actor_IsTransformActor(s16 actorId) {
+    s32 i;
+
+    for (i = 0; i < ARRAY_COUNT(sTransformActors); i++) {
+        if (actorId == sTransformActors[i]) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 posX, f32 posY, f32 posZ, s16 rotX,
                    s16 rotY, s16 rotZ, s16 params) {
     s32 pad;
@@ -3276,7 +3290,11 @@ Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 pos
                                          : NULL);
     }
 
-    objectSlot = Object_GetSlot(&play->objectCtx, profile->objectId);
+    if (Actor_IsTransformActor(actorId)) {
+        objectSlot = TRANSFORM_OBJECT_SLOT;
+    } else {
+        objectSlot = Object_GetSlot(&play->objectCtx, profile->objectId);
+    }
 
     if ((objectSlot < 0) ||
         ((profile->category == ACTORCAT_ENEMY) && Flags_GetClear(play, play->roomCtx.curRoom.num))) {

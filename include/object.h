@@ -6,6 +6,11 @@
 
 struct PlayState;
 
+// HackerOoT: dedicated object space for player transformation actors (see `Object_LoadTransform`).
+// The slot index is deliberately outside the range of `ObjectContext.slots`.
+#define TRANSFORM_OBJECT_SPACE (500 * 1024)
+#define TRANSFORM_OBJECT_SLOT 64
+
 typedef struct ObjectEntry {
     /* 0x00 */ s16 id;
     /* 0x04 */ void* segment;
@@ -22,7 +27,10 @@ typedef struct ObjectContext {
     /* 0x000A */ u8 mainKeepSlot; // "gameplay_keep" slot
     /* 0x000B */ u8 subKeepSlot; // "gameplay_field_keep" or "gameplay_dangeon_keep" slot
     /* 0x000C */ ObjectEntry slots[19];
-} ObjectContext; // size = 0x518
+    // HackerOoT: object currently loaded into the transform space (-1 if none), see `Object_LoadTransform`
+    s16 loadedTransformObjectId;
+    void* transformSpaceStart;
+} ObjectContext;
 
 #define DEFINE_OBJECT(_0, enum) enum,
 #define DEFINE_OBJECT_EMPTY(_0, enum) enum,
@@ -38,6 +46,7 @@ typedef enum ObjectId {
 #undef DEFINE_OBJECT_UNSET
 
 void Object_InitContext(struct PlayState* play, ObjectContext* objectCtx);
+void Object_LoadTransform(ObjectContext* objectCtx, s16 objectId);
 void Object_UpdateEntries(ObjectContext* objectCtx);
 s32 Object_GetSlot(ObjectContext* objectCtx, s16 objectId);
 s32 Object_IsLoaded(ObjectContext* objectCtx, s32 slot);
