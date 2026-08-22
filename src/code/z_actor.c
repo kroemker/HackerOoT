@@ -3195,6 +3195,7 @@ void Actor_FreeOverlay(ActorOverlay* actorOverlay) {
 // dedicated transform object space (see `Object_LoadTransform`) instead of a regular object slot.
 static s16 sTransformActors[] = {
     ACTOR_TRANSFORM_BABY_GOHMA,
+    ACTOR_TRANSFORM_IK,
 };
 
 s32 Actor_IsTransformActor(s16 actorId) {

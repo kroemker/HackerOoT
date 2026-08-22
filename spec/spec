@@ -601,6 +601,9 @@ beginseg
 #if IMPROVED_ANIMATION_MORPHING
     include "$(BUILD_DIR)/src/code/z_bettermorph.o"
 #endif
+#if TRANSFORM_USE_MORPH
+    include "$(BUILD_DIR)/src/code/z_morph.o"
+#endif
     include "$(BUILD_DIR)/src/code/z_skelanime.o"
     include "$(BUILD_DIR)/src/code/z_skin.o"
     include "$(BUILD_DIR)/src/code/z_skin_awb.o"
@@ -1141,6 +1144,13 @@ beginseg
     compress
     include "$(BUILD_DIR)/src/overlays/actors/ovl_Transform_Baby_Gohma/z_transform_baby_gohma.o"
     include "$(BUILD_DIR)/src/overlays/actors/ovl_Transform_Baby_Gohma/ovl_Transform_Baby_Gohma_reloc.o"
+endseg
+
+beginseg
+    name "ovl_Transform_Ik"
+    compress
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Transform_Ik/z_transform_ik.o"
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Transform_Ik/ovl_Transform_Ik_reloc.o"
 endseg
 
 // Overlays for most actors and effects are reordered between versions. On N64 and iQue,

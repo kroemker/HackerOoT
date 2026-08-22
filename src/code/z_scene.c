@@ -10,6 +10,7 @@
 #include "translation.h"
 #include "versions.h"
 #include "config.h"
+#include "morph.h"
 #include "z_actor_dlftbls.h"
 #include "z_lib.h"
 #include "play_state.h"
@@ -98,6 +99,10 @@ void Object_InitContext(PlayState* play, ObjectContext* objectCtx) {
     // HackerOoT: reserve space for on-demand loading of transformation objects (see `Object_LoadTransform`)
     objectCtx->transformSpaceStart = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, "../z_scene.c", 219);
     objectCtx->loadedTransformObjectId = -1;
+#if TRANSFORM_USE_MORPH
+    // Any morph state from a previous play state points into freed memory
+    Morph_Reset();
+#endif
 
     objectCtx->mainKeepSlot = Object_SpawnPersistent(objectCtx, OBJECT_GAMEPLAY_KEEP);
     gSegments[4] = OS_K0_TO_PHYSICAL(objectCtx->slots[objectCtx->mainKeepSlot].segment);

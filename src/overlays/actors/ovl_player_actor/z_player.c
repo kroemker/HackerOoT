@@ -56,6 +56,7 @@
 #include "assets/objects/object_link_child/object_link_child.h"
 
 #include "config.h"
+#include "morph.h"
 
 // Some player animations are played at this reduced speed, for reasons yet unclear.
 // This is called "adjusted" for now.
@@ -2664,6 +2665,33 @@ void Player_Action_TransformEnd(Player* this, PlayState* play);
 // Alpha added/removed per frame while the screen fill fades in/out during a transformation
 #define TRANSFORM_SCREEN_FILL_SPEED 50
 
+#if TRANSFORM_USE_MORPH
+// With the vertex morph, the screen fill is only a short white flash masking the model swap
+// (the morph itself is fully visible), so it ramps up much faster than the gray fade.
+#define TRANSFORM_FLASH_SPEED 85
+
+/**
+ * Ramps up the white flash that masks the model swap. Returns true once the screen is fully
+ * covered and the swap may happen. With `TRANSFORM_MORPH_FLASH` disabled there is no flash and
+ * the swap may happen immediately.
+ */
+static s32 Player_SetTransformScreenFlash(PlayState* play) {
+#if TRANSFORM_MORPH_FLASH
+    play->envCtx.fillScreen = true;
+    play->envCtx.screenFillColor[0] = 255;
+    play->envCtx.screenFillColor[1] = 255;
+    play->envCtx.screenFillColor[2] = 255;
+    play->envCtx.screenFillColor[3] = (play->envCtx.screenFillColor[3] < 255 - TRANSFORM_FLASH_SPEED)
+                                          ? play->envCtx.screenFillColor[3] + TRANSFORM_FLASH_SPEED
+                                          : 255;
+
+    return play->envCtx.screenFillColor[3] == 255;
+#else
+    return true;
+#endif
+}
+#endif
+
 void Player_SetupTransformBack(Player* this, PlayState* play) {
     Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
     Player_SetupAction(play, this, Player_Action_TransformBack, 0);
@@ -2690,6 +2718,10 @@ s32 Player_CheckTransform(Player* this, PlayState* play) {
         Player_InitiateTransformation(this, play, ACTOR_TRANSFORM_BABY_GOHMA, OBJECT_GOL, NA_SE_EN_GOMA_BJR_CRY);
         return true;
     }
+    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DRIGHT)) {
+        Player_InitiateTransformation(this, play, ACTOR_TRANSFORM_IK, OBJECT_IK, NA_SE_EN_IRONNACK_WAKEUP);
+        return true;
+    }
     return false;
 }
 
@@ -2697,6 +2729,13 @@ void Player_DisableTransform(Player* this, PlayState* play) {
     this->stateFlags2 &= ~(PLAYER_STATE2_29 | PLAYER_STATE2_15); // re-enable player draw + updating
     this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMED;
     play->interfaceCtx.unk_1FA = false; // clear B button text
+
+#if TRANSFORM_USE_MORPH
+    // Undo any vertex morph on the mesh copy so the transform space never caches a warped mesh,
+    // and drop pending morph requests
+    Morph_Restore(this->transformActor);
+    Morph_Reset();
+#endif
 
     if ((this->transformActor != NULL) && (this->transformActor->update != NULL)) {
         Actor_Kill(this->transformActor);
@@ -2718,7 +2757,28 @@ void Player_Action_TransformEnd(Player* this, PlayState* play) {
 }
 
 void Player_Action_TransformBack(Player* this, PlayState* play) {
+    s32 swapReady;
+
     this->actor.speed = this->speedXZ = 0.0f;
+
+#if TRANSFORM_USE_MORPH
+    // Phase 0: ask the creature to collapse onto Link's shape (it consumes the request in its
+    // own update, since only it knows its SkelAnime)
+    if (this->av2.actionVar2 == 0) {
+        this->av2.actionVar2 = 1;
+        Morph_RequestCollapse();
+        return;
+    }
+
+    // Phase 1: wait for the collapse to finish (skipped if the creature died meanwhile)
+    if ((this->transformActor != NULL) && (this->transformActor->update != NULL) &&
+        (Morph_CollapseRequested() || Morph_IsBusy())) {
+        return;
+    }
+
+    // Phase 2: flash white and swap Link back in behind it
+    swapReady = Player_SetTransformScreenFlash(play);
+#else
     play->envCtx.fillScreen = true;
     play->envCtx.screenFillColor[0] = 160;
     play->envCtx.screenFillColor[1] = 160;
@@ -2726,8 +2786,10 @@ void Player_Action_TransformBack(Player* this, PlayState* play) {
     play->envCtx.screenFillColor[3] = (play->envCtx.screenFillColor[3] < 255 - TRANSFORM_SCREEN_FILL_SPEED)
                                           ? play->envCtx.screenFillColor[3] + TRANSFORM_SCREEN_FILL_SPEED
                                           : 255;
+    swapReady = (play->envCtx.screenFillColor[3] == 255);
+#endif
 
-    if (play->envCtx.screenFillColor[3] == 255) {
+    if (swapReady) {
         Player_DisableTransform(this, play);
         Player_SetupAction(play, this, Player_Action_TransformEnd, 0);
     }
@@ -2748,6 +2810,12 @@ void Player_Action_Transformed(Player* this, PlayState* play) {
         Player_DisableTransform(this, play);
         func_8083A060(this, play); // return to standing still
     } else {
+#if TRANSFORM_USE_MORPH
+        // Don't allow re-transforming while the unfold morph is still playing
+        if (Morph_IsBusy()) {
+            return;
+        }
+#endif
         // Transform back or switch directly to another transformation; the current creature stays
         // alive until the fade fully covers the screen (it is killed in `Player_DisableTransform`
         // or `Player_Action_Transform` respectively)
@@ -2756,7 +2824,12 @@ void Player_Action_Transformed(Player* this, PlayState* play) {
 }
 
 void Player_Action_Transform(Player* this, PlayState* play) {
+    s32 swapReady;
+
     this->actor.speed = this->speedXZ = 0.0f;
+#if TRANSFORM_USE_MORPH
+    swapReady = Player_SetTransformScreenFlash(play);
+#else
     play->envCtx.fillScreen = true;
     play->envCtx.screenFillColor[0] = 160;
     play->envCtx.screenFillColor[1] = 160;
@@ -2764,8 +2837,25 @@ void Player_Action_Transform(Player* this, PlayState* play) {
     play->envCtx.screenFillColor[3] = (play->envCtx.screenFillColor[3] < 255 - TRANSFORM_SCREEN_FILL_SPEED)
                                           ? play->envCtx.screenFillColor[3] + TRANSFORM_SCREEN_FILL_SPEED
                                           : 255;
+    swapReady = (play->envCtx.screenFillColor[3] == 255);
+#endif
 
-    if (play->envCtx.screenFillColor[3] == 255) {
+    if (swapReady) {
+#if TRANSFORM_USE_MORPH
+        if (this->transformActor == NULL) {
+            // Coming from Link: capture his shape as the morph source (also reused as the
+            // collapse target when transforming back)
+            Morph_CaptureLinkSnapshot(play, this);
+        } else if ((this->transformActor->update != NULL) && !Morph_MonsterCaptureDone()) {
+            // Switching between transformations: the outgoing creature captures its own posed
+            // shape in its next update (only it knows its SkelAnime), so wait one frame
+            Morph_RequestMonsterCapture();
+            return;
+        }
+        // The old creature's mesh must be restored before its object is overwritten below
+        Morph_Restore(this->transformActor);
+        Morph_RequestUnfold();
+#endif
         // When switching directly between transformations, remove the old creature before its
         // object is evicted from the transform space
         if ((this->transformActor != NULL) && (this->transformActor->update != NULL)) {

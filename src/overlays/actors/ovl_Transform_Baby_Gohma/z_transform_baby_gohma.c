@@ -19,6 +19,7 @@
 #include "rand.h"
 #include "effect.h"
 #include "libc64/math64.h"
+#include "morph.h"
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
 
@@ -308,6 +309,14 @@ void TransformBabyGohma_Init(Actor* thisx, PlayState* play) {
     this->actor.speedCap = SPEED_CAP;
     this->actor.gravity = GRAVITY;
 
+#if TRANSFORM_USE_MORPH
+    // Pose the skeleton so the vertex morph can compute the posed mesh, then start unfolding
+    // from the shape of the actor we transformed from (no-op when no unfold was requested)
+    Animation_PlayLoop(&this->skelAnime, &gObjectGolStandAnim);
+    SkelAnime_Update(&this->skelAnime);
+    Morph_TryBeginUnfold(play, &this->actor, &this->skelAnime, NULL, 0, TRANSFORM_MORPH_DURATION);
+#endif
+
     TransformBabyGohma_SetupAction(this, play, TransformBabyGohma_Action_Idle);
 
     this->actor.speed = GET_PLAYER(play)->actor.speed;
@@ -316,6 +325,11 @@ void TransformBabyGohma_Init(Actor* thisx, PlayState* play) {
 
 void TransformBabyGohma_Destroy(Actor* thisx, PlayState* play) {
     TransformBabyGohma* this = (TransformBabyGohma*)thisx;
+
+#if TRANSFORM_USE_MORPH
+    // Never leave a morphed mesh behind in the transform space
+    Morph_Restore(&this->actor);
+#endif
 
     Collider_DestroyCylinder(play, &this->attackCol);
     Collider_DestroyCylinder(play, &this->bodyCol);
@@ -382,6 +396,24 @@ void TransformBabyGohma_SetFloorRot(TransformBabyGohma* this) {
 void TransformBabyGohma_Update(Actor* thisx, PlayState* play) {
     TransformBabyGohma* this = (TransformBabyGohma*)thisx;
     Player* player = GET_PLAYER(play);
+
+#if TRANSFORM_USE_MORPH
+    if (Morph_MonsterCaptureRequested()) {
+        // The player is switching to another transformation and needs this creature's shape
+        Morph_CaptureMonsterSnapshot(play, &this->actor, &this->skelAnime, NULL, 0);
+    }
+    if (Morph_CollapseRequested()) {
+        Morph_TryBeginCollapse(play, &this->actor, &this->skelAnime, NULL, 0, TRANSFORM_MORPH_DURATION);
+    }
+    if (Morph_IsActiveFor(&this->actor) || Morph_IsCollapsedFor(&this->actor)) {
+        // Hold everything (movement, animation, colliders) while the vertex morph plays;
+        // the morph writes the mesh directly and the frozen pose keeps it exact
+        Actor_SetPlayerLocation(&this->actor, play, 20.0f);
+        Actor_SetFocus(&this->actor, 20.0f);
+        Morph_Update(play, &this->actor);
+        return;
+    }
+#endif
 
     // Keep the (hidden, frozen) Player actor glued to this actor's position/facing each frame,
     // so the existing Player-locked camera keeps following the visible, controlled creature.
