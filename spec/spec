@@ -601,9 +601,7 @@ beginseg
 #if IMPROVED_ANIMATION_MORPHING
     include "$(BUILD_DIR)/src/code/z_bettermorph.o"
 #endif
-#if TRANSFORM_USE_MORPH
-    include "$(BUILD_DIR)/src/code/z_morph.o"
-#endif
+    include "$(BUILD_DIR)/src/code/z_transform_fade.o"
     include "$(BUILD_DIR)/src/code/z_skelanime.o"
     include "$(BUILD_DIR)/src/code/z_skin.o"
     include "$(BUILD_DIR)/src/code/z_skin_awb.o"
@@ -4233,6 +4231,14 @@ beginseg
     compress
     romalign 0x1000
     include "$(BUILD_DIR)/assets/objects/object_zl4/object_zl4.o"
+    number 6
+endseg
+
+beginseg
+    name "object_gol_baby"
+    compress
+    romalign 0x1000
+    include "$(BUILD_DIR)/assets/objects/object_gol_baby/object_gol_baby.o"
     number 6
 endseg
 

@@ -105,22 +105,8 @@
 #define TC_ALPHA_FADE_OUT_INCR 40
 #define TC_ALPHA_FADE_IN_INCR 30
 
-/**
- * Player transformations: morph the creature's vertices from/to Link's shape
- * (see src/code/z_morph.c) instead of hiding the model swap behind a screen fade.
- */
-#define TRANSFORM_USE_MORPH true
-// Length of the vertex morph in frames (Link <-> creature)
-#define TRANSFORM_MORPH_DURATION 16
-// Length of the vertex morph when switching directly between two creatures
-#define TRANSFORM_MORPH_DURATION_SWITCH 12
-// Overshoot strength of the unfold easing (easeOutBack); 0.0f gives a plain smoothstep.
-// 1.70158f is the classic ~10% overshoot.
-#define TRANSFORM_MORPH_OVERSHOOT 1.70158f
-// Spawn magic sparkles around the creature while a morph plays
-#define TRANSFORM_MORPH_SPARKLES true
-// Mask the model swap with a short white screen flash. Disabled for now so the
-// whole morph is visible while it is being tuned.
-#define TRANSFORM_MORPH_FLASH false
+// Length of the player transformation alpha ramp, in frames (Link <-> creature, and each leg of
+// creature <-> creature); see src/code/z_transform_fade.c
+#define TRANSFORM_FADE_DURATION 24
 
 #endif

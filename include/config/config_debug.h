@@ -28,10 +28,10 @@
 /**
  * Options for booting directly into a scene, the debug boot or the file select, instead of the title screen.
  */
-#define BOOT_TO_SCENE false
+#define BOOT_TO_SCENE true
 #define BOOT_TO_SCENE_NEW_GAME_ONLY false
 #define BOOT_TO_FILE_SELECT false
-#define BOOT_TO_DEBUG_OPENING true
+#define BOOT_TO_DEBUG_OPENING false
 
 /**
  * Use file 1 to load the map select from the file select
@@ -40,7 +40,7 @@
 #define MAP_SELECT_ON_FILE_1 false
 
 // Change these if using `BOOT_TO_SCENE`, `BOOT_TO_SCENE_NEW_GAME_ONLY` or `BOOT_TO_DEBUG_OPENING`
-#define BOOT_ENTRANCE ENTR_FIRE_TEMPLE_1
+#define BOOT_ENTRANCE ENTR_DODONGOS_CAVERN_0
 #define BOOT_AGE LINK_AGE_CHILD
 #define BOOT_CUTSCENE 0x0000
 

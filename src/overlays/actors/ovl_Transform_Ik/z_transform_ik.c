@@ -18,8 +18,8 @@
 #include "z_lib.h"
 #include "rumble.h"
 #include "effect.h"
-#include "morph.h"
 #include "array_count.h"
+#include "transform_fade.h"
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
 
@@ -111,22 +111,6 @@ static ColliderTrisInit sShieldTrisCollider = {
     2,
     sTrisElementsInit,
 };
-
-#if TRANSFORM_USE_MORPH
-// What TransformIk_OverrideLimbDraw/TransformIk_PostLimbDraw do to the mesh, so the vertex
-// morph walker sees the armor pieces the player actually sees
-static MorphLimbSwap sMorphLimbSwaps[] = {
-    { IRON_KNUCKLE_LIMB_HELMET_ARMOR, MORPH_LIMB_REPLACE, gIronKnuckleHelmetDL },
-    { IRON_KNUCKLE_LIMB_HEAD, MORPH_LIMB_REPLACE, gIronKnuckleGerudoHeadDL },
-    { IRON_KNUCKLE_LIMB_TORSO, MORPH_LIMB_HIDE, NULL },
-    { IRON_KNUCKLE_LIMB_WAIST, MORPH_LIMB_HIDE, NULL },
-    { IRON_KNUCKLE_LIMB_HELMET_ARMOR, MORPH_LIMB_ADD, gIronKnuckleHelmetMarkingDL },
-    { IRON_KNUCKLE_LIMB_UPPER_LEFT_PAULDRON, MORPH_LIMB_ADD, object_ik_DL_016F88 },
-    { IRON_KNUCKLE_LIMB_UPPER_RIGHT_PAULDRON, MORPH_LIMB_ADD, object_ik_DL_016EE8 },
-    { IRON_KNUCKLE_LIMB_CHEST_ARMOR_FRONT, MORPH_LIMB_ADD, gIronKnuckleArmorRivetAndSymbolDL },
-    { IRON_KNUCKLE_LIMB_CHEST_ARMOR_BACK, MORPH_LIMB_ADD, object_ik_DL_016CD8 },
-};
-#endif
 
 static ColliderQuadInit sAxeCollider = {
     {
@@ -497,14 +481,8 @@ void TransformIk_Init(Actor* thisx, PlayState* play) {
 
     Effect_Add(play, &this->blureIdx, EFFECT_BLURE1, 0, 0, &blureInit);
 
-#if TRANSFORM_USE_MORPH
-    // Pose the skeleton so the vertex morph can compute the posed mesh, then start unfolding
-    // from the shape of the actor we transformed from (no-op when no unfold was requested)
-    Animation_PlayLoop(&this->skelAnime, &object_ik_Anim_00DD50);
-    SkelAnime_Update(&this->skelAnime);
-    Morph_TryBeginUnfold(play, &this->actor, &this->skelAnime, sMorphLimbSwaps, ARRAY_COUNT(sMorphLimbSwaps),
-                         TRANSFORM_MORPH_DURATION);
-#endif
+    // The alpha fade-in is started by `Player_Action_Transform` right after spawning (see
+    // transform_fade.h)
 
     TransformIk_SetupAction(this, play, TransformIk_Action_Idle);
 
@@ -516,11 +494,6 @@ void TransformIk_Init(Actor* thisx, PlayState* play) {
 void TransformIk_Destroy(Actor* thisx, PlayState* play) {
     TransformIk* this = (TransformIk*)thisx;
 
-#if TRANSFORM_USE_MORPH
-    // Never leave a morphed mesh behind in the transform space
-    Morph_Restore(&this->actor);
-#endif
-
     Collider_DestroyTris(play, &this->shieldCollider);
     Collider_DestroyCylinder(play, &this->bodyCollider);
     Collider_DestroyQuad(play, &this->axeCollider);
@@ -529,26 +502,6 @@ void TransformIk_Destroy(Actor* thisx, PlayState* play) {
 void TransformIk_Update(Actor* thisx, PlayState* play) {
     TransformIk* this = (TransformIk*)thisx;
     Player* player = GET_PLAYER(play);
-
-#if TRANSFORM_USE_MORPH
-    if (Morph_MonsterCaptureRequested()) {
-        // The player is switching to another transformation and needs this creature's shape
-        Morph_CaptureMonsterSnapshot(play, &this->actor, &this->skelAnime, sMorphLimbSwaps,
-                                     ARRAY_COUNT(sMorphLimbSwaps));
-    }
-    if (Morph_CollapseRequested()) {
-        Morph_TryBeginCollapse(play, &this->actor, &this->skelAnime, sMorphLimbSwaps, ARRAY_COUNT(sMorphLimbSwaps),
-                               TRANSFORM_MORPH_DURATION);
-    }
-    if (Morph_IsActiveFor(&this->actor) || Morph_IsCollapsedFor(&this->actor)) {
-        // Hold everything (movement, animation, colliders) while the vertex morph plays;
-        // the morph writes the mesh directly and the frozen pose keeps it exact
-        Actor_SetPlayerLocation(&this->actor, play, 45.0f);
-        Actor_SetFocus(&this->actor, 45.0f);
-        Morph_Update(play, &this->actor);
-        return;
-    }
-#endif
 
     Actor_SetPlayerLocation(&this->actor, play, 45.0f);
     Actor_SetFocus(&this->actor, 45.0f);
@@ -634,7 +587,8 @@ void TransformIk_Update(Actor* thisx, PlayState* play) {
     this->previousFrameInWater = !!(this->actor.bgCheckFlags & BGCHECKFLAG_WATER);
 }
 
-Gfx* TransformIk_SetPrimEnvColors(GraphicsContext* gfxCtx, u8 primR, u8 primG, u8 primB, u8 envR, u8 envG, u8 envB) {
+Gfx* TransformIk_SetPrimEnvColors(GraphicsContext* gfxCtx, u8 primR, u8 primG, u8 primB, u8 envR, u8 envG, u8 envB,
+                                  u8 alpha) {
     Gfx* displayList;
     Gfx* displayListHead;
 
@@ -642,14 +596,15 @@ Gfx* TransformIk_SetPrimEnvColors(GraphicsContext* gfxCtx, u8 primR, u8 primG, u
     displayListHead = displayList;
 
     gDPPipeSync(displayListHead++);
-    gDPSetPrimColor(displayListHead++, 0, 0, primR, primG, primB, 255);
-    gDPSetEnvColor(displayListHead++, envR, envG, envB, 255);
+    gDPSetPrimColor(displayListHead++, 0, 0, primR, primG, primB, alpha);
+    gDPSetEnvColor(displayListHead++, envR, envG, envB, alpha);
     gSPEndDisplayList(displayListHead++);
 
     return displayList;
 }
 
-s32 TransformIk_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, void* thisx) {
+s32 TransformIk_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, void* thisx,
+                                 Gfx** gfxP) {
     if (limbIndex == IRON_KNUCKLE_LIMB_HELMET_ARMOR) {
         *dList = gIronKnuckleHelmetDL;
     } else if (limbIndex == IRON_KNUCKLE_LIMB_HEAD) {
@@ -681,7 +636,7 @@ static Vec3f sShieldTris1[] = {
     { -3000.0, -700.0, -5000.0 },
 };
 
-void TransformIk_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, void* thisx) {
+void TransformIk_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, void* thisx, Gfx** gfxP) {
     Vec3f blureP1;
     Vec3f blureP2;
     TransformIk* this = (TransformIk*)thisx;
@@ -756,21 +711,36 @@ static Color_RGB8 sTunicColors[3] = {
 void TransformIk_Draw(Actor* thisx, PlayState* play) {
     TransformIk* this = (TransformIk*)thisx;
     u8 tunic = TUNIC_EQUIP_TO_PLAYER(CUR_EQUIP_VALUE(EQUIP_TYPE_TUNIC));
+    u8 alpha = TransformFade_GetAlpha();
+
+    if (alpha == 0) {
+        // Fully faded out: nothing to draw
+        return;
+    }
 
     OPEN_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
 
     Gfx_SetupDL_25Opa(play->state.gfxCtx);
     Gfx_SetupDL_25Xlu(play->state.gfxCtx);
 
-    gSPSegment(POLY_OPA_DISP++, 0x08, TransformIk_SetPrimEnvColors(play->state.gfxCtx, 245, 225, 155, 30, 30, 0));
+    gSPSegment(POLY_OPA_DISP++, 0x08,
+               TransformIk_SetPrimEnvColors(play->state.gfxCtx, 245, 225, 155, 30, 30, 0, alpha));
     gSPSegment(POLY_OPA_DISP++, 0x09,
                TransformIk_SetPrimEnvColors(play->state.gfxCtx, sTunicColors[tunic].r, sTunicColors[tunic].g,
                                             sTunicColors[tunic].b, sTunicColors[tunic].r / 4, sTunicColors[tunic].g / 4,
-                                            sTunicColors[tunic].b / 4));
-    gSPSegment(POLY_OPA_DISP++, 0x0A, TransformIk_SetPrimEnvColors(play->state.gfxCtx, 255, 255, 255, 20, 40, 30));
+                                            sTunicColors[tunic].b / 4, alpha));
+    gSPSegment(POLY_OPA_DISP++, 0x0A,
+               TransformIk_SetPrimEnvColors(play->state.gfxCtx, 255, 255, 255, 20, 40, 30, alpha));
 
-    SkelAnime_DrawFlexOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, this->skelAnime.dListCount,
-                          TransformIk_OverrideLimbDraw, TransformIk_PostLimbDraw, this);
+    if (alpha == 255) {
+        POLY_OPA_DISP =
+            SkelAnime_DrawFlex(play, this->skelAnime.skeleton, this->skelAnime.jointTable, this->skelAnime.dListCount,
+                              TransformIk_OverrideLimbDraw, TransformIk_PostLimbDraw, this, POLY_OPA_DISP);
+    } else {
+        POLY_XLU_DISP =
+            SkelAnime_DrawFlex(play, this->skelAnime.skeleton, this->skelAnime.jointTable, this->skelAnime.dListCount,
+                              TransformIk_OverrideLimbDraw, TransformIk_PostLimbDraw, this, POLY_XLU_DISP);
+    }
 
     CLOSE_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
 }
