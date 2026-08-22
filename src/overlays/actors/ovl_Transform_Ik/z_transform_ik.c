@@ -521,7 +521,7 @@ void TransformIk_Update(Actor* thisx, PlayState* play) {
                !((this->bodyCollider.base.ac != NULL) && (this->bodyCollider.base.ac->id == ACTOR_BG_JYA_HAHENIRON))) {
         this->bodyCollider.base.acFlags &= ~AC_HIT;
 
-        Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_RED, 255, COLORFILTER_BUFFLAG_OPA, 12);
+        Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_RED, 255, COLORFILTER_BUFFLAG_XLU, 12);
 
         play->damagePlayer(play, -this->actor.colChkInfo.damage);
         this->invincibilityTimer = 30;

@@ -334,7 +334,7 @@ void TransformBabyGohma_UpdateHit(TransformBabyGohma* this, PlayState* play) {
     if (this->bodyCol.base.acFlags & AC_HIT) {
         this->bodyCol.base.acFlags &= ~AC_HIT;
 
-        Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_RED, 255, COLORFILTER_BUFFLAG_OPA, 12);
+        Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_RED, 255, COLORFILTER_BUFFLAG_XLU, 12);
 
         play->damagePlayer(play, -this->actor.colChkInfo.damage);
 

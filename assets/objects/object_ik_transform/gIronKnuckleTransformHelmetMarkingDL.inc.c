@@ -17,7 +17,7 @@
     gsDPPipeSync(),
     gsDPLoadTextureBlock(object_ik_transform_Tex_011960, G_IM_FMT_IA, G_IM_SIZ_8b, object_ik_transform_Tex_011960_WIDTH,
  object_ik_transform_Tex_011960_HEIGHT, 0, G_TX_NOMIRROR | G_TX_CLAMP, G_TX_NOMIRROR | G_TX_WRAP, 4, 4, G_TX_NOLOD, G_TX_NOLOD),
-    gsDPSetRenderMode(G_RM_FOG_SHADE_A, G_RM_AA_ZB_XLU_SURF2),
+    gsDPSetRenderMode(G_RM_FOG_SHADE_A, G_RM_IK_TRANSFORM_XLU_SURF2),
     gsSPVertex(&gIronKnuckleTransformHelmetMarkingVtx[15], 32, 0),
     gsSP2Triangles(0, 1, 2, 0, 3, 4, 5, 0),
     gsSP2Triangles(6, 7, 8, 0, 9, 10, 11, 0),

@@ -96,8 +96,11 @@ void Object_InitContext(PlayState* play, ObjectContext* objectCtx) {
         GAME_STATE_ALLOC(&play->state, spaceSize, "../z_scene.c", 219);
     objectCtx->spaceEnd = (void*)((uintptr_t)objectCtx->spaceStart + spaceSize);
 
-    // HackerOoT: reserve space for on-demand loading of transformation objects (see `Object_LoadTransform`)
-    objectCtx->transformSpaceStart = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, "../z_scene.c", 219);
+    // HackerOoT: reserve space for on-demand loading of transformation objects (see `Object_LoadTransform`).
+    // Double-buffered; see the comment on `ObjectContext.transformSpaceStart`.
+    objectCtx->transformSpaceStart[0] = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, "../z_scene.c", 219);
+    objectCtx->transformSpaceStart[1] = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, "../z_scene.c", 219);
+    objectCtx->transformSpaceIndex = 0;
     objectCtx->loadedTransformObjectId = -1;
     // Any fade state from a previous play state is stale
     TransformFade_Reset();
@@ -113,6 +116,7 @@ void Object_InitContext(PlayState* play, ObjectContext* objectCtx) {
  */
 void Object_LoadTransform(ObjectContext* objectCtx, s16 objectId) {
     u32 size;
+    s32 nextIndex;
 
     if (objectCtx->loadedTransformObjectId == objectId) {
         return;
@@ -125,7 +129,13 @@ void Object_LoadTransform(ObjectContext* objectCtx, s16 objectId) {
 
     ASSERT(size <= TRANSFORM_OBJECT_SPACE, "size <= TRANSFORM_OBJECT_SPACE", __FILE__, __LINE__);
 
-    DMA_REQUEST_SYNC(objectCtx->transformSpaceStart, gObjectTable[objectId].vromStart, size, __FILE__, __LINE__);
+    // DMA into the buffer that isn't currently active (see the comment on
+    // `ObjectContext.transformSpaceStart`) so we never overwrite data a previous frame's
+    // already-submitted display list might still be referencing on the RCP.
+    nextIndex = objectCtx->transformSpaceIndex ^ 1;
+    DMA_REQUEST_SYNC(objectCtx->transformSpaceStart[nextIndex], gObjectTable[objectId].vromStart, size, __FILE__,
+                      __LINE__);
+    objectCtx->transformSpaceIndex = nextIndex;
 
     objectCtx->loadedTransformObjectId = objectId;
 }

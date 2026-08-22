@@ -945,8 +945,9 @@ void Actor_SetScale(Actor* actor, f32 scale) {
 
 // HackerOoT: transformation actors live in the dedicated transform object space instead of a regular slot
 void* Actor_GetObjectSegment(PlayState* play, Actor* actor) {
-    return (actor->objectSlot == TRANSFORM_OBJECT_SLOT) ? play->objectCtx.transformSpaceStart
-                                                        : play->objectCtx.slots[actor->objectSlot].segment;
+    return (actor->objectSlot == TRANSFORM_OBJECT_SLOT)
+               ? play->objectCtx.transformSpaceStart[play->objectCtx.transformSpaceIndex]
+               : play->objectCtx.slots[actor->objectSlot].segment;
 }
 
 void Actor_SetObjectDependency(PlayState* play, Actor* actor) {

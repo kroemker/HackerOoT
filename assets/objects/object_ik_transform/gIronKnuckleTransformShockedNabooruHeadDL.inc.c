@@ -5,7 +5,7 @@
  gIronKnuckleTransformGerudoEyeTex_HEIGHT, 0, G_TX_NOMIRROR | G_TX_CLAMP, G_TX_NOMIRROR | G_TX_CLAMP, 5, 5, G_TX_NOLOD,
  G_TX_NOLOD),
     gsDPSetCombineLERP(TEXEL0, 0, SHADE, 0, 0, 0, 0, ENVIRONMENT, COMBINED, 0, PRIMITIVE, 0, 0, 0, 0, COMBINED),
-    gsDPSetRenderMode(G_RM_FOG_SHADE_A, G_RM_AA_ZB_XLU_SURF2),
+    gsDPSetRenderMode(G_RM_FOG_SHADE_A, G_RM_IK_TRANSFORM_XLU_SURF2),
     gsSPClearGeometryMode(G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR),
     gsSPSetGeometryMode(G_CULL_BACK | G_FOG | G_LIGHTING),
     gsDPSetPrimColor(0, 0, 255, 255, 255, 255),

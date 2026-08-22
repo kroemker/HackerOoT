@@ -29,7 +29,14 @@ typedef struct ObjectContext {
     /* 0x000C */ ObjectEntry slots[19];
     // HackerOoT: object currently loaded into the transform space (-1 if none), see `Object_LoadTransform`
     s16 loadedTransformObjectId;
-    void* transformSpaceStart;
+    // HackerOoT: the transform space is double-buffered (like the engine's own graphics pools) so
+    // that loading a new transform object never DMAs over the buffer a still in-flight display
+    // list (built on a previous frame, for the actor that just stopped using it) might still be
+    // referencing on the RCP. `transformSpaceIndex` selects which of the two buffers is the one
+    // currently in use by `loadedTransformObjectId`; `Object_LoadTransform` always DMAs into the
+    // other one before switching over.
+    void* transformSpaceStart[2];
+    s32 transformSpaceIndex;
 } ObjectContext;
 
 #define DEFINE_OBJECT(_0, enum) enum,

@@ -5,6 +5,16 @@
 #include "tex_len.h"
 #include "ultra64.h"
 
+// HackerOoT: like G_RM_AA_ZB_XLU_SURF2, but also updates the Z-buffer (Z_UPD). This object's
+// materials render through the XLU pass unconditionally so the whole model can cross-fade via
+// TransformFade (see TransformIk_Draw), but without Z_UPD the model's own limbs don't occlude
+// each other correctly (XLU draws test the depth buffer but don't write it, so overlap is decided
+// by skeleton draw order instead of actual depth). Since this only affects self-occlusion within
+// the model, writing Z here is safe and matches how the vanilla OPA-rendered body behaves.
+#define G_RM_IK_TRANSFORM_XLU_SURF2                                                   \
+    (AA_EN | Z_CMP | Z_UPD | IM_RD | CVG_DST_WRAP | CLR_ON_CVG | FORCE_BL | ZMODE_XLU | \
+     GBL_c2(G_BL_CLR_IN, G_BL_A_IN, G_BL_CLR_MEM, G_BL_1MA))
+
 extern s16 object_ik_transform_Anim_00035C_06000000_FrameData[];
 extern JointIndex object_ik_transform_Anim_00035C_06000350_JointIndices[];
 extern AnimationHeader object_ik_transform_Anim_00035C;
