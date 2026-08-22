@@ -641,11 +641,9 @@ void TransformIk_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s
     Vec3f blureP2;
     TransformIk* this = (TransformIk*)thisx;
 
-    OPEN_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
-
     if (limbIndex == IRON_KNUCKLE_LIMB_HELMET_ARMOR) {
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, __FILE__, __LINE__);
-        gSPDisplayList(POLY_XLU_DISP++, gIronKnuckleTransformHelmetMarkingDL);
+        MATRIX_FINALIZE_AND_LOAD((*gfxP)++, play->state.gfxCtx, __FILE__, __LINE__);
+        gSPDisplayList((*gfxP)++, gIronKnuckleTransformHelmetMarkingDL);
     } else if (limbIndex == IRON_KNUCKLE_LIMB_AXE) {
         s32 i;
         Vec3f shieldVertices0[3];
@@ -679,27 +677,25 @@ void TransformIk_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s
 
     switch (limbIndex) {
         case IRON_KNUCKLE_LIMB_UPPER_LEFT_PAULDRON:
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, __FILE__, __LINE__);
-            gSPDisplayList(POLY_XLU_DISP++, object_ik_transform_DL_016F88);
+            MATRIX_FINALIZE_AND_LOAD((*gfxP)++, play->state.gfxCtx, __FILE__, __LINE__);
+            gSPDisplayList((*gfxP)++, object_ik_transform_DL_016F88);
             break;
 
         case IRON_KNUCKLE_LIMB_UPPER_RIGHT_PAULDRON:
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, __FILE__, __LINE__);
-            gSPDisplayList(POLY_XLU_DISP++, object_ik_transform_DL_016EE8);
+            MATRIX_FINALIZE_AND_LOAD((*gfxP)++, play->state.gfxCtx, __FILE__, __LINE__);
+            gSPDisplayList((*gfxP)++, object_ik_transform_DL_016EE8);
             break;
 
         case IRON_KNUCKLE_LIMB_CHEST_ARMOR_FRONT:
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, __FILE__, __LINE__);
-            gSPDisplayList(POLY_XLU_DISP++, gIronKnuckleTransformArmorRivetAndSymbolDL);
+            MATRIX_FINALIZE_AND_LOAD((*gfxP)++, play->state.gfxCtx, __FILE__, __LINE__);
+            gSPDisplayList((*gfxP)++, gIronKnuckleTransformArmorRivetAndSymbolDL);
             break;
 
         case IRON_KNUCKLE_LIMB_CHEST_ARMOR_BACK:
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, __FILE__, __LINE__);
-            gSPDisplayList(POLY_XLU_DISP++, object_ik_transform_DL_016CD8);
+            MATRIX_FINALIZE_AND_LOAD((*gfxP)++, play->state.gfxCtx, __FILE__, __LINE__);
+            gSPDisplayList((*gfxP)++, object_ik_transform_DL_016CD8);
             break;
     }
-
-    CLOSE_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
 }
 
 static Color_RGB8 sTunicColors[3] = {
