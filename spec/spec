@@ -4242,6 +4242,14 @@ beginseg
     number 6
 endseg
 
+beginseg
+    name "object_ik_transform"
+    compress
+    romalign 0x1000
+    include "$(BUILD_DIR)/assets/objects/object_ik_transform/object_ik_transform.o"
+    number 6
+endseg
+
 #if !ENABLE_MM_TITLE_CARDS
 beginseg
     name "g_pn_01"

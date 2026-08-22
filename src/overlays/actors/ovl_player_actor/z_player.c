@@ -2704,7 +2704,7 @@ s32 Player_CheckTransform(Player* this, PlayState* play) {
         return true;
     }
     if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DRIGHT)) {
-        Player_InitiateTransformation(this, play, ACTOR_TRANSFORM_IK, OBJECT_IK, NA_SE_EN_IRONNACK_WAKEUP);
+        Player_InitiateTransformation(this, play, ACTOR_TRANSFORM_IK, OBJECT_IK_TRANSFORM, NA_SE_EN_IRONNACK_WAKEUP);
         return true;
     }
     return false;
