@@ -105,8 +105,4 @@
 #define TC_ALPHA_FADE_OUT_INCR 40
 #define TC_ALPHA_FADE_IN_INCR 30
 
-// Length of the player transformation alpha ramp, in frames (Link <-> creature, and each leg of
-// creature <-> creature); see src/code/z_transform_fade.c
-#define TRANSFORM_FADE_DURATION 24
-
 #endif

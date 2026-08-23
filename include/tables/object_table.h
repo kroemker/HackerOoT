@@ -409,5 +409,3 @@
 /* 0x018F */ DEFINE_OBJECT(object_ouke_haka, OBJECT_OUKE_HAKA)
 /* 0x0190 */ DEFINE_OBJECT(object_timeblock, OBJECT_TIMEBLOCK)
 /* 0x0191 */ DEFINE_OBJECT(object_zl4, OBJECT_ZL4)
-/* 0x0192 */ DEFINE_OBJECT(object_gol_baby, OBJECT_GOL_BABY) // HackerOoT: Baby Gohma player transformation, cloned from object_gol so its display lists can be edited (see z_transform_fade.c)
-/* 0x0193 */ DEFINE_OBJECT(object_ik_transform, OBJECT_IK_TRANSFORM) // HackerOoT: Iron Knuckle player transformation, cloned from object_ik so its display lists can be edited (see z_transform_fade.c)

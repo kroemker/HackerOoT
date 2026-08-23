@@ -787,8 +787,6 @@ typedef struct WeaponInfo {
 #define PLAYER_STATE3_CS_HALT (0)
 #endif
 
-// HackerOoT: the screen-fill fade of a transformation (in either direction) is in progress
-#define PLAYER_STATE3_TRANSFORMING (1 << 20)
 // HackerOoT: Player is hidden/frozen and a transformation actor is being controlled in its place
 #define PLAYER_STATE3_TRANSFORMED (1 << 21)
 
@@ -1002,11 +1000,8 @@ typedef struct Player {
     /* 0x0A87 */ u8 unk_A87;
     /* 0x0A88 */ Vec3f unk_A88; // previous body part 0 position
     // HackerOoT: non-NULL while Player is hidden/frozen and possessed by a transformation actor
-    // (see `Player_InitiateTransformation` and the `Player_Action_Transform*` functions)
+    // (see `Player_InitiateTransformation` and `Player_Action_Transformed`)
     Actor* transformActor;
-    // HackerOoT: actor/object to spawn once the transformation fade has fully covered the screen
-    s16 transformActorId;
-    s16 transformObjectId;
 } Player;
 
 // z_player_lib.c

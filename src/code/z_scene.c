@@ -10,7 +10,6 @@
 #include "translation.h"
 #include "versions.h"
 #include "config.h"
-#include "transform_fade.h"
 #include "z_actor_dlftbls.h"
 #include "z_lib.h"
 #include "play_state.h"
@@ -102,8 +101,6 @@ void Object_InitContext(PlayState* play, ObjectContext* objectCtx) {
     objectCtx->transformSpaceStart[1] = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, "../z_scene.c", 219);
     objectCtx->transformSpaceIndex = 0;
     objectCtx->loadedTransformObjectId = -1;
-    // Any fade state from a previous play state is stale
-    TransformFade_Reset();
 
     objectCtx->mainKeepSlot = Object_SpawnPersistent(objectCtx, OBJECT_GAMEPLAY_KEEP);
     gSegments[4] = OS_K0_TO_PHYSICAL(objectCtx->slots[objectCtx->mainKeepSlot].segment);

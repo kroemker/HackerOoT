@@ -5,7 +5,7 @@
  */
 
 #include "z_transform_ik.h"
-#include "assets/objects/object_ik_transform/object_ik_transform.h"
+#include "assets/objects/object_ik/object_ik.h"
 
 #include "play_state.h"
 #include "sfx.h"
@@ -19,7 +19,6 @@
 #include "rumble.h"
 #include "effect.h"
 #include "array_count.h"
-#include "transform_fade.h"
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
 
@@ -46,7 +45,7 @@ ActorProfile Transform_Ik_Profile = {
     /**/ ACTOR_TRANSFORM_IK,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
-    /**/ OBJECT_IK_TRANSFORM,
+    /**/ OBJECT_IK,
     /**/ sizeof(TransformIk),
     /**/ TransformIk_Init,
     /**/ TransformIk_Destroy,
@@ -142,43 +141,43 @@ void TransformIk_SetupAction(TransformIk* this, PlayState* play, TransformIkActi
     this->axeCollider.elem.atDmgInfo.dmgFlags = DMG_UNBLOCKABLE;
     this->axeCollider.elem.atDmgInfo.damage = 0x40;
     if (this->actionFunc == TransformIk_Action_Cutscene) {
-        Animation_Change(&this->skelAnime, &object_ik_transform_Anim_00DD50, 0.0f, 0.0f,
-                         Animation_GetLastFrame(&object_ik_transform_Anim_00DD50), ANIMMODE_LOOP, 4.0f);
+        Animation_Change(&this->skelAnime, &object_ik_Anim_00DD50, 0.0f, 0.0f,
+                         Animation_GetLastFrame(&object_ik_Anim_00DD50), ANIMMODE_LOOP, 4.0f);
         Interface_SetDoAction(play, DO_ACTION_NONE);
         Interface_LoadActionLabelB(play, DO_ACTION_NONE);
     } else if (this->actionFunc == TransformIk_Action_Idle) {
-        Animation_Change(&this->skelAnime, &object_ik_transform_Anim_00DD50, 0.0f, 0.0f,
-                         Animation_GetLastFrame(&object_ik_transform_Anim_00DD50), ANIMMODE_LOOP, 4.0f);
+        Animation_Change(&this->skelAnime, &object_ik_Anim_00DD50, 0.0f, 0.0f,
+                         Animation_GetLastFrame(&object_ik_Anim_00DD50), ANIMMODE_LOOP, 4.0f);
         Interface_SetDoAction(play, DO_ACTION_ATTACK);
         Interface_LoadActionLabelB(play, DO_ACTION_ATTACK);
     } else if (this->actionFunc == TransformIk_Action_Walk) {
-        Animation_Change(&this->skelAnime, &gIronKnuckleTransformWalkAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gIronKnuckleTransformWalkAnim), ANIMMODE_LOOP, -4.0f);
+        Animation_Change(&this->skelAnime, &gIronKnuckleWalkAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gIronKnuckleWalkAnim), ANIMMODE_LOOP, -4.0f);
         Interface_SetDoAction(play, DO_ACTION_ATTACK);
         Interface_LoadActionLabelB(play, DO_ACTION_ATTACK);
     } else if (this->actionFunc == TransformIk_Action_Run) {
-        Animation_Change(&this->skelAnime, &gIronKnuckleTransformRunAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gIronKnuckleTransformRunAnim), ANIMMODE_LOOP, -4.0f);
+        Animation_Change(&this->skelAnime, &gIronKnuckleRunAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gIronKnuckleRunAnim), ANIMMODE_LOOP, -4.0f);
         Actor_PlaySfx(&this->actor, NA_SE_EN_IRONNACK_DASH);
         Interface_SetDoAction(play, DO_ACTION_ATTACK);
         Interface_LoadActionLabelB(play, DO_ACTION_ATTACK);
     } else if (this->actionFunc == TransformIk_Action_SwingAxe) {
         this->actor.speed = 0.0f;
-        Animation_Change(&this->skelAnime, &gIronKnuckleTransformHorizontalAttackAnim, 0.5f, 0.0f, 10.0f,
+        Animation_Change(&this->skelAnime, &gIronKnuckleHorizontalAttackAnim, 0.5f, 0.0f, 10.0f,
                          ANIMMODE_ONCE_INTERP, -4.0f);
         Interface_SetDoAction(play, DO_ACTION_NONE);
         Interface_LoadActionLabelB(play, DO_ACTION_NONE);
     } else if (this->actionFunc == TransformIk_Action_VerticalAttack) {
         this->actor.speed = 0.0f;
-        Animation_Change(&this->skelAnime, &gIronKnuckleTransformVerticalAttackAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gIronKnuckleTransformVerticalAttackAnim), ANIMMODE_ONCE_INTERP, -4.0f);
+        Animation_Change(&this->skelAnime, &gIronKnuckleVerticalAttackAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gIronKnuckleVerticalAttackAnim), ANIMMODE_ONCE_INTERP, -4.0f);
         Interface_SetDoAction(play, DO_ACTION_NONE);
         Interface_LoadActionLabelB(play, DO_ACTION_NONE);
     } else if (this->actionFunc == TransformIk_Action_PullOutAxe) {
         Actor_PlaySfx(&this->actor, NA_SE_EN_IRONNACK_PULLOUT);
-        Animation_Change(&this->skelAnime, &gIronKnuckleTransformAxeStuckAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gIronKnuckleTransformAxeStuckAnim), ANIMMODE_LOOP, -4.0f);
-        this->animationTimer = Animation_GetLastFrame(&gIronKnuckleTransformAxeStuckAnim);
+        Animation_Change(&this->skelAnime, &gIronKnuckleAxeStuckAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gIronKnuckleAxeStuckAnim), ANIMMODE_LOOP, -4.0f);
+        this->animationTimer = Animation_GetLastFrame(&gIronKnuckleAxeStuckAnim);
         Interface_SetDoAction(play, DO_ACTION_NONE);
         Interface_LoadActionLabelB(play, DO_ACTION_NONE);
     } else if (this->actionFunc == TransformIk_Action_ReturnToIdleAfterAnimFinished) {
@@ -189,8 +188,8 @@ void TransformIk_SetupAction(TransformIk* this, PlayState* play, TransformIkActi
     } else if (this->actionFunc == TransformIk_Action_Block) {
         this->shieldState = 1;
         this->actor.speed = 0.0f;
-        Animation_Change(&this->skelAnime, &gIronKnuckleTransformBlockAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gIronKnuckleTransformBlockAnim), ANIMMODE_ONCE_INTERP, -4.0f);
+        Animation_Change(&this->skelAnime, &gIronKnuckleBlockAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gIronKnuckleBlockAnim), ANIMMODE_ONCE_INTERP, -4.0f);
         Interface_SetDoAction(play, DO_ACTION_NONE);
         Interface_LoadActionLabelB(play, DO_ACTION_NONE);
     } else if (this->actionFunc == TransformIk_Action_GetHit) {
@@ -198,20 +197,20 @@ void TransformIk_SetupAction(TransformIk* this, PlayState* play, TransformIkActi
         s16 yawDiff = yaw - this->actor.shape.rot.y;
 
         if (ABS(yawDiff) <= 0x4000) {
-            Animation_Change(&this->skelAnime, &gIronKnuckleTransformFrontHitAnim, 1.0f, 0.0f,
-                             Animation_GetLastFrame(&gIronKnuckleTransformFrontHitAnim), ANIMMODE_ONCE, -4.0f);
+            Animation_Change(&this->skelAnime, &gIronKnuckleFrontHitAnim, 1.0f, 0.0f,
+                             Animation_GetLastFrame(&gIronKnuckleFrontHitAnim), ANIMMODE_ONCE, -4.0f);
             this->actor.speed = -6.0f;
         } else {
-            Animation_Change(&this->skelAnime, &gIronKnuckleTransformBackHitAnim, 1.0f, 0.0f,
-                             Animation_GetLastFrame(&gIronKnuckleTransformBackHitAnim), ANIMMODE_ONCE, -4.0f);
+            Animation_Change(&this->skelAnime, &gIronKnuckleBackHitAnim, 1.0f, 0.0f,
+                             Animation_GetLastFrame(&gIronKnuckleBackHitAnim), ANIMMODE_ONCE, -4.0f);
             this->actor.speed = 6.0f;
         }
         Interface_SetDoAction(play, DO_ACTION_NONE);
         Interface_LoadActionLabelB(play, DO_ACTION_NONE);
     } else if (this->actionFunc == TransformIk_Action_Fall) {
         this->shieldState = 1;
-        Animation_Change(&this->skelAnime, &gIronKnuckleTransformBlockAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gIronKnuckleTransformBlockAnim), ANIMMODE_ONCE_INTERP, -4.0f);
+        Animation_Change(&this->skelAnime, &gIronKnuckleBlockAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gIronKnuckleBlockAnim), ANIMMODE_ONCE_INTERP, -4.0f);
         Interface_SetDoAction(play, DO_ACTION_NONE);
         Interface_LoadActionLabelB(play, DO_ACTION_NONE);
     }
@@ -283,7 +282,7 @@ void TransformIk_Action_VerticalAttack(TransformIk* this, PlayState* play) {
 
 void TransformIk_Action_PullOutAxe(TransformIk* this, PlayState* play) {
     if (SkelAnime_Update(&this->skelAnime) || (--this->animationTimer == 0)) {
-        this->recoverAnimation = &gIronKnuckleTransformRecoverFromVerticalAttackAnim;
+        this->recoverAnimation = &gIronKnuckleRecoverFromVerticalAttackAnim;
         TransformIk_SetupAction(this, play, TransformIk_Action_ReturnToIdleAfterAnimFinished);
     }
 }
@@ -292,7 +291,7 @@ void TransformIk_Action_SwingAxe(TransformIk* this, PlayState* play) {
     if ((this->skelAnime.curFrame > 7.0f) && CHECK_BTN_ALL(play->state.input[0].press.button, BTN_B) &&
         (this->queuedAttack == 0)) {
         this->queuedAttack = 1;
-        this->skelAnime.endFrame = Animation_GetLastFrame(&gIronKnuckleTransformHorizontalAttackAnim);
+        this->skelAnime.endFrame = Animation_GetLastFrame(&gIronKnuckleHorizontalAttackAnim);
     }
 
     TransformIk_SetUnderwaterProperties(this, play, NULL, 0.5f);
@@ -315,7 +314,7 @@ void TransformIk_Action_SwingAxe(TransformIk* this, PlayState* play) {
 
     if (SkelAnime_Update(&this->skelAnime)) {
         if (this->skelAnime.curFrame > 10.0f) {
-            this->recoverAnimation = &gIronKnuckleTransformRecoverFromHorizontalAttackAnim;
+            this->recoverAnimation = &gIronKnuckleRecoverFromHorizontalAttackAnim;
             TransformIk_SetupAction(this, play, TransformIk_Action_ReturnToIdleAfterAnimFinished);
         } else {
             TransformIk_SetupAction(this, play, TransformIk_Action_Idle);
@@ -450,7 +449,7 @@ void TransformIk_Init(Actor* thisx, PlayState* play) {
     EffectBlureInit1 blureInit;
 
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 30.0f);
-    SkelAnime_InitFlex(play, &this->skelAnime, &gIronKnuckleTransformSkel, &gIronKnuckleTransformNabooruSummonAxeAnim,
+    SkelAnime_InitFlex(play, &this->skelAnime, &gIronKnuckleSkel, &gIronKnuckleNabooruSummonAxeAnim,
                        this->jointTable, this->morphTable, IRON_KNUCKLE_LIMB_MAX);
 
     Collider_InitCylinder(play, &this->bodyCollider);
@@ -481,9 +480,6 @@ void TransformIk_Init(Actor* thisx, PlayState* play) {
 
     Effect_Add(play, &this->blureIdx, EFFECT_BLURE1, 0, 0, &blureInit);
 
-    // The alpha fade-in is started by `Player_Action_Transform` right after spawning (see
-    // transform_fade.h)
-
     TransformIk_SetupAction(this, play, TransformIk_Action_Idle);
 
     this->actor.speed = GET_PLAYER(play)->actor.speed;
@@ -507,7 +503,7 @@ void TransformIk_Update(Actor* thisx, PlayState* play) {
     Actor_SetFocus(&this->actor, 45.0f);
 
     if (this->shieldCollider.base.acFlags & AC_BOUNCED) {
-        s16 frames = Animation_GetLastFrame(&gIronKnuckleTransformBlockAnim) - 2.0f;
+        s16 frames = Animation_GetLastFrame(&gIronKnuckleBlockAnim) - 2.0f;
 
         if (this->skelAnime.curFrame < frames) {
             this->skelAnime.curFrame = frames;
@@ -521,7 +517,7 @@ void TransformIk_Update(Actor* thisx, PlayState* play) {
                !((this->bodyCollider.base.ac != NULL) && (this->bodyCollider.base.ac->id == ACTOR_BG_JYA_HAHENIRON))) {
         this->bodyCollider.base.acFlags &= ~AC_HIT;
 
-        Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_RED, 255, COLORFILTER_BUFFLAG_XLU, 12);
+        Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_RED, 255, COLORFILTER_BUFFLAG_OPA, 12);
 
         play->damagePlayer(play, -this->actor.colChkInfo.damage);
         this->invincibilityTimer = 30;
@@ -587,8 +583,7 @@ void TransformIk_Update(Actor* thisx, PlayState* play) {
     this->previousFrameInWater = !!(this->actor.bgCheckFlags & BGCHECKFLAG_WATER);
 }
 
-Gfx* TransformIk_SetPrimEnvColors(GraphicsContext* gfxCtx, u8 primR, u8 primG, u8 primB, u8 envR, u8 envG, u8 envB,
-                                  u8 alpha) {
+Gfx* TransformIk_SetPrimEnvColors(GraphicsContext* gfxCtx, u8 primR, u8 primG, u8 primB, u8 envR, u8 envG, u8 envB) {
     Gfx* displayList;
     Gfx* displayListHead;
 
@@ -596,19 +591,18 @@ Gfx* TransformIk_SetPrimEnvColors(GraphicsContext* gfxCtx, u8 primR, u8 primG, u
     displayListHead = displayList;
 
     gDPPipeSync(displayListHead++);
-    gDPSetPrimColor(displayListHead++, 0, 0, primR, primG, primB, alpha);
-    gDPSetEnvColor(displayListHead++, envR, envG, envB, alpha);
+    gDPSetPrimColor(displayListHead++, 0, 0, primR, primG, primB, 255);
+    gDPSetEnvColor(displayListHead++, envR, envG, envB, 255);
     gSPEndDisplayList(displayListHead++);
 
     return displayList;
 }
 
-s32 TransformIk_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, void* thisx,
-                                 Gfx** gfxP) {
+s32 TransformIk_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, void* thisx) {
     if (limbIndex == IRON_KNUCKLE_LIMB_HELMET_ARMOR) {
-        *dList = gIronKnuckleTransformHelmetDL;
+        *dList = gIronKnuckleHelmetDL;
     } else if (limbIndex == IRON_KNUCKLE_LIMB_HEAD) {
-        *dList = gIronKnuckleTransformGerudoHeadDL;
+        *dList = gIronKnuckleGerudoHeadDL;
     } else if ((limbIndex == IRON_KNUCKLE_LIMB_CHEST_ARMOR_FRONT) || (limbIndex == IRON_KNUCKLE_LIMB_CHEST_ARMOR_BACK)) {
     } else if ((limbIndex == IRON_KNUCKLE_LIMB_TORSO) || (limbIndex == IRON_KNUCKLE_LIMB_WAIST)) {
         *dList = NULL;
@@ -636,14 +630,16 @@ static Vec3f sShieldTris1[] = {
     { -3000.0, -700.0, -5000.0 },
 };
 
-void TransformIk_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, void* thisx, Gfx** gfxP) {
+void TransformIk_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, void* thisx) {
     Vec3f blureP1;
     Vec3f blureP2;
     TransformIk* this = (TransformIk*)thisx;
 
+    OPEN_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
+
     if (limbIndex == IRON_KNUCKLE_LIMB_HELMET_ARMOR) {
-        MATRIX_FINALIZE_AND_LOAD((*gfxP)++, play->state.gfxCtx, __FILE__, __LINE__);
-        gSPDisplayList((*gfxP)++, gIronKnuckleTransformHelmetMarkingDL);
+        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, __FILE__, __LINE__);
+        gSPDisplayList(POLY_XLU_DISP++, gIronKnuckleHelmetMarkingDL);
     } else if (limbIndex == IRON_KNUCKLE_LIMB_AXE) {
         s32 i;
         Vec3f shieldVertices0[3];
@@ -677,25 +673,27 @@ void TransformIk_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s
 
     switch (limbIndex) {
         case IRON_KNUCKLE_LIMB_UPPER_LEFT_PAULDRON:
-            MATRIX_FINALIZE_AND_LOAD((*gfxP)++, play->state.gfxCtx, __FILE__, __LINE__);
-            gSPDisplayList((*gfxP)++, object_ik_transform_DL_016F88);
+            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, __FILE__, __LINE__);
+            gSPDisplayList(POLY_XLU_DISP++, object_ik_DL_016F88);
             break;
 
         case IRON_KNUCKLE_LIMB_UPPER_RIGHT_PAULDRON:
-            MATRIX_FINALIZE_AND_LOAD((*gfxP)++, play->state.gfxCtx, __FILE__, __LINE__);
-            gSPDisplayList((*gfxP)++, object_ik_transform_DL_016EE8);
+            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, __FILE__, __LINE__);
+            gSPDisplayList(POLY_XLU_DISP++, object_ik_DL_016EE8);
             break;
 
         case IRON_KNUCKLE_LIMB_CHEST_ARMOR_FRONT:
-            MATRIX_FINALIZE_AND_LOAD((*gfxP)++, play->state.gfxCtx, __FILE__, __LINE__);
-            gSPDisplayList((*gfxP)++, gIronKnuckleTransformArmorRivetAndSymbolDL);
+            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, __FILE__, __LINE__);
+            gSPDisplayList(POLY_XLU_DISP++, gIronKnuckleArmorRivetAndSymbolDL);
             break;
 
         case IRON_KNUCKLE_LIMB_CHEST_ARMOR_BACK:
-            MATRIX_FINALIZE_AND_LOAD((*gfxP)++, play->state.gfxCtx, __FILE__, __LINE__);
-            gSPDisplayList((*gfxP)++, object_ik_transform_DL_016CD8);
+            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, __FILE__, __LINE__);
+            gSPDisplayList(POLY_XLU_DISP++, object_ik_DL_016CD8);
             break;
     }
+
+    CLOSE_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
 }
 
 static Color_RGB8 sTunicColors[3] = {
@@ -707,37 +705,21 @@ static Color_RGB8 sTunicColors[3] = {
 void TransformIk_Draw(Actor* thisx, PlayState* play) {
     TransformIk* this = (TransformIk*)thisx;
     u8 tunic = TUNIC_EQUIP_TO_PLAYER(CUR_EQUIP_VALUE(EQUIP_TYPE_TUNIC));
-    u8 alpha = TransformFade_GetAlpha();
-
-    if (alpha == 0) {
-        // Fully faded out: nothing to draw
-        return;
-    }
 
     OPEN_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
 
+    Gfx_SetupDL_25Opa(play->state.gfxCtx);
     Gfx_SetupDL_25Xlu(play->state.gfxCtx);
 
-    gSPSegment(POLY_XLU_DISP++, 0x08,
-               TransformIk_SetPrimEnvColors(play->state.gfxCtx, 245, 225, 155, 30, 30, 0, alpha));
-    gSPSegment(POLY_XLU_DISP++, 0x09,
+    gSPSegment(POLY_OPA_DISP++, 0x08, TransformIk_SetPrimEnvColors(play->state.gfxCtx, 245, 225, 155, 30, 30, 0));
+    gSPSegment(POLY_OPA_DISP++, 0x09,
                TransformIk_SetPrimEnvColors(play->state.gfxCtx, sTunicColors[tunic].r, sTunicColors[tunic].g,
                                             sTunicColors[tunic].b, sTunicColors[tunic].r / 4, sTunicColors[tunic].g / 4,
-                                            sTunicColors[tunic].b / 4, alpha));
-    gSPSegment(POLY_XLU_DISP++, 0x0A,
-               TransformIk_SetPrimEnvColors(play->state.gfxCtx, 255, 255, 255, 20, 40, 30, alpha));
+                                            sTunicColors[tunic].b / 4));
+    gSPSegment(POLY_OPA_DISP++, 0x0A, TransformIk_SetPrimEnvColors(play->state.gfxCtx, 255, 255, 255, 20, 40, 30));
 
-    // object_ik_transform's display lists (unlike the shared object_ik) are authored to always
-    // blend via ENVIRONMENT alpha, so the creature is drawn through the XLU pass at every alpha
-    // level; that's what lets `TransformFade`'s alpha actually cross-fade the mesh in and out.
-    // Materials that don't set their own env color (e.g. the torso and head) inherit whatever
-    // ENVIRONMENT was last set to, so refresh it here before the first limb draws.
-    gDPPipeSync(POLY_XLU_DISP++);
-    gDPSetEnvColor(POLY_XLU_DISP++, 255, 255, 255, alpha);
-
-    POLY_XLU_DISP =
-        SkelAnime_DrawFlex(play, this->skelAnime.skeleton, this->skelAnime.jointTable, this->skelAnime.dListCount,
-                          TransformIk_OverrideLimbDraw, TransformIk_PostLimbDraw, this, POLY_XLU_DISP);
+    SkelAnime_DrawFlexOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, this->skelAnime.dListCount,
+                          TransformIk_OverrideLimbDraw, TransformIk_PostLimbDraw, this);
 
     CLOSE_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
 }

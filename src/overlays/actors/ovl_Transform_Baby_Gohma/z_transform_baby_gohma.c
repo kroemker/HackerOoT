@@ -5,7 +5,7 @@
  */
 
 #include "z_transform_baby_gohma.h"
-#include "assets/objects/object_gol_baby/object_gol_baby.h"
+#include "assets/objects/object_gol/object_gol.h"
 
 #include "play_state.h"
 #include "sfx.h"
@@ -19,7 +19,6 @@
 #include "rand.h"
 #include "effect.h"
 #include "libc64/math64.h"
-#include "transform_fade.h"
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
 
@@ -44,7 +43,7 @@ ActorProfile Transform_Baby_Gohma_Profile = {
     /**/ ACTOR_TRANSFORM_BABY_GOHMA,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
-    /**/ OBJECT_GOL_BABY,
+    /**/ OBJECT_GOL,
     /**/ sizeof(TransformBabyGohma),
     /**/ TransformBabyGohma_Init,
     /**/ TransformBabyGohma_Destroy,
@@ -98,20 +97,20 @@ void TransformBabyGohma_SetupAction(TransformBabyGohma* this, PlayState* play,
 
     this->eyeColorIndex = 1;
     if (this->actionFunc == TransformBabyGohma_Action_Cutscene) {
-        Animation_Change(&this->skelAnime, &gObjectGolBabyStandAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gObjectGolBabyStandAnim), ANIMMODE_LOOP, 8.0f);
+        Animation_Change(&this->skelAnime, &gObjectGolStandAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gObjectGolStandAnim), ANIMMODE_LOOP, 8.0f);
         Interface_SetDoAction(play, DO_ACTION_NONE);
         Interface_LoadActionLabelB(play, DO_ACTION_NONE);
     }
     if (this->actionFunc == TransformBabyGohma_Action_Idle) {
-        Animation_Change(&this->skelAnime, &gObjectGolBabyStandAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gObjectGolBabyStandAnim), ANIMMODE_LOOP, 4.0f);
+        Animation_Change(&this->skelAnime, &gObjectGolStandAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gObjectGolStandAnim), ANIMMODE_LOOP, 4.0f);
         Interface_SetDoAction(play, DO_ACTION_JUMP);
         Interface_LoadActionLabelB(play, DO_ACTION_ATTACK);
         this->idleTimer = 80;
     } else if (this->actionFunc == TransformBabyGohma_Action_Run) {
-        Animation_Change(&this->skelAnime, &gObjectGolBabyRunningAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gObjectGolBabyRunningAnim), ANIMMODE_LOOP, 4.0f);
+        Animation_Change(&this->skelAnime, &gObjectGolRunningAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gObjectGolRunningAnim), ANIMMODE_LOOP, 4.0f);
         Interface_SetDoAction(play, DO_ACTION_JUMP);
         Interface_LoadActionLabelB(play, DO_ACTION_ATTACK);
     } else if (this->actionFunc == TransformBabyGohma_Action_PrepareJump) {
@@ -119,30 +118,30 @@ void TransformBabyGohma_SetupAction(TransformBabyGohma* this, PlayState* play,
         this->eyeColorIndex = 0;
         Interface_SetDoAction(play, DO_ACTION_JUMP);
         Interface_LoadActionLabelB(play, DO_ACTION_RETURN);
-        Animation_Change(&this->skelAnime, &gObjectGolBabyPrepareJumpAnim, 4.0f, 0.0f,
-                         Animation_GetLastFrame(&gObjectGolBabyPrepareJumpAnim), ANIMMODE_ONCE, 0.0f);
+        Animation_Change(&this->skelAnime, &gObjectGolPrepareJumpAnim, 4.0f, 0.0f,
+                         Animation_GetLastFrame(&gObjectGolPrepareJumpAnim), ANIMMODE_ONCE, 0.0f);
     } else if (this->actionFunc == TransformBabyGohma_Action_Jump) {
         this->actor.speed = CLAMP(this->framesAPressed * 1.1f + 6.0f, 8.0f, 16.0f);
         this->actor.velocity.y = CLAMP(this->framesAPressed * 0.6f + 8.0f, 8.0f, 12.0f);
         this->framesAPressed = 0;
-        Animation_Change(&this->skelAnime, &gObjectGolBabyJumpHeadbuttAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gObjectGolBabyJumpHeadbuttAnim), ANIMMODE_ONCE_INTERP, -2.0f);
+        Animation_Change(&this->skelAnime, &gObjectGolJumpHeadbuttAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gObjectGolJumpHeadbuttAnim), ANIMMODE_ONCE_INTERP, -2.0f);
 
         Actor_PlaySfx(&this->actor, NA_SE_EN_GOMA_BJR_CRY);
         this->eyeColorIndex = 0;
     } else if (this->actionFunc == TransformBabyGohma_Action_HeadAttack) {
         this->actor.speed = 0.0f;
         this->eyeColorIndex = 0;
-        Animation_Change(&this->skelAnime, &gObjectGolBabyPrepareJumpAnim, 3.0f, 0.0f,
-                         Animation_GetLastFrame(&gObjectGolBabyPrepareJumpAnim), ANIMMODE_ONCE_INTERP, -2.0f);
+        Animation_Change(&this->skelAnime, &gObjectGolPrepareJumpAnim, 3.0f, 0.0f,
+                         Animation_GetLastFrame(&gObjectGolPrepareJumpAnim), ANIMMODE_ONCE_INTERP, -2.0f);
     } else if (this->actionFunc == TransformBabyGohma_Action_Land) {
         this->actor.speed = 0.0f;
-        Animation_Change(&this->skelAnime, &gObjectGolBabyLandFromJumpAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gObjectGolBabyLandFromJumpAnim), ANIMMODE_ONCE_INTERP, -2.0f);
+        Animation_Change(&this->skelAnime, &gObjectGolLandFromJumpAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gObjectGolLandFromJumpAnim), ANIMMODE_ONCE_INTERP, -2.0f);
     } else if (this->actionFunc == TransformBabyGohma_Action_GetHit) {
         this->actor.speed = 0.0f;
-        Animation_Change(&this->skelAnime, &gObjectGolBabyDamagedAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gObjectGolBabyDamagedAnim), ANIMMODE_ONCE_INTERP, -2.0f);
+        Animation_Change(&this->skelAnime, &gObjectGolDamagedAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gObjectGolDamagedAnim), ANIMMODE_ONCE_INTERP, -2.0f);
     }
 }
 
@@ -298,8 +297,8 @@ void TransformBabyGohma_Init(Actor* thisx, PlayState* play) {
     TransformBabyGohma* this = (TransformBabyGohma*)thisx;
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 40.0f);
     Actor_SetScale(&this->actor, 0.01f);
-    SkelAnime_Init(play, &this->skelAnime, &gObjectGolBabySkel, &gObjectGolBabyStandAnim, this->jointTable,
-                   this->morphTable, 24);
+    SkelAnime_Init(play, &this->skelAnime, &gObjectGolSkel, &gObjectGolStandAnim, this->jointTable,
+                   this->morphTable, GOMA_LIMB_MAX);
 
     Collider_InitCylinder(play, &this->attackCol);
     Collider_SetCylinder(play, &this->attackCol, &this->actor, &sAttackCollider);
@@ -308,9 +307,6 @@ void TransformBabyGohma_Init(Actor* thisx, PlayState* play) {
 
     this->actor.speedCap = SPEED_CAP;
     this->actor.gravity = GRAVITY;
-
-    // The alpha fade-in is started by `Player_Action_Transform` right after spawning (see
-    // transform_fade.h)
 
     TransformBabyGohma_SetupAction(this, play, TransformBabyGohma_Action_Idle);
 
@@ -334,7 +330,7 @@ void TransformBabyGohma_UpdateHit(TransformBabyGohma* this, PlayState* play) {
     if (this->bodyCol.base.acFlags & AC_HIT) {
         this->bodyCol.base.acFlags &= ~AC_HIT;
 
-        Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_RED, 255, COLORFILTER_BUFFLAG_XLU, 12);
+        Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_RED, 255, COLORFILTER_BUFFLAG_OPA, 12);
 
         play->damagePlayer(play, -this->actor.colChkInfo.damage);
 
@@ -433,31 +429,28 @@ void TransformBabyGohma_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 TransformBabyGohma_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot,
-                                        void* thisx, Gfx** gfxP) {
+                                        void* thisx) {
     TransformBabyGohma* this = (TransformBabyGohma*)thisx;
-    u8 alpha = TransformFade_GetAlpha();
 
-    gDPPipeSync((*gfxP)++);
-    gDPSetEnvColor((*gfxP)++, (s16)this->eyeEnvColor[0], (s16)this->eyeEnvColor[1], (s16)this->eyeEnvColor[2], alpha);
+    OPEN_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
+
+    gDPSetEnvColor(POLY_OPA_DISP++, (s16)this->eyeEnvColor[0], (s16)this->eyeEnvColor[1], (s16)this->eyeEnvColor[2],
+                   255);
 
     if (limbIndex == GOMA_LIMB_EYE_IRIS_ROOT1) {
         rot->x += this->eyePitch;
         rot->y += this->eyeYaw;
     } else if (limbIndex == GOMA_LIMB_BODY && this->hurtTimer != 0) {
-        gDPSetEnvColor((*gfxP)++, (s16)(Rand_ZeroOne() * 255.0f), (s16)(Rand_ZeroOne() * 255.0f),
-                       (s16)(Rand_ZeroOne() * 255.0f), alpha);
+        gDPSetEnvColor(POLY_OPA_DISP++, (s16)(Rand_ZeroOne() * 255.0f), (s16)(Rand_ZeroOne() * 255.0f),
+                       (s16)(Rand_ZeroOne() * 255.0f), 255);
     }
 
+    CLOSE_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
     return 0;
 }
 
 void TransformBabyGohma_Draw(Actor* thisx, PlayState* play) {
     TransformBabyGohma* this = (TransformBabyGohma*)thisx;
-    u8 alpha = TransformFade_GetAlpha();
-
-    if (alpha == 0) {
-        return;
-    }
 
     OPEN_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
 
@@ -472,9 +465,9 @@ void TransformBabyGohma_Draw(Actor* thisx, PlayState* play) {
     Matrix_RotateZ(BINANG_TO_RAD_ALT(this->actor.shape.rot.z), MTXMODE_APPLY);
     Matrix_Scale(this->actor.scale.x, this->actor.scale.y, this->actor.scale.z, MTXMODE_APPLY);
 
-    Gfx_SetupDL_25Xlu(play->state.gfxCtx);
-    POLY_XLU_DISP = SkelAnime_Draw(play, this->skelAnime.skeleton, this->skelAnime.jointTable,
-                                   TransformBabyGohma_OverrideLimbDraw, NULL, this, POLY_XLU_DISP);
+    Gfx_SetupDL_25Opa(play->state.gfxCtx);
+    SkelAnime_DrawOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, TransformBabyGohma_OverrideLimbDraw,
+                      NULL, this);
 
     CLOSE_DISPS(play->state.gfxCtx, __FILE__, __LINE__);
 }

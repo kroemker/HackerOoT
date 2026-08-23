@@ -56,7 +56,6 @@
 #include "assets/objects/object_link_child/object_link_child.h"
 
 #include "config.h"
-#include "transform_fade.h"
 
 // Some player animations are played at this reduced speed, for reasons yet unclear.
 // This is called "adjusted" for now.
@@ -2644,77 +2643,25 @@ s32 Player_GetItemOnButton(PlayState* play, s32 index) {
  * HackerOoT: player transformations
  *
  * Pressing a transformation button (see `Player_CheckTransform`) loads the creature's object into
- * the dedicated transform space and spawns the transformation actor in Player's place. Player
- * keeps drawing normally (just frozen) while the creature's own mesh alpha ramps in on top of him
- * (`Player_Action_Transform`, see `transform_fade.h`); once fully opaque Player is hidden and
- * control hands off. While transformed (`Player_Action_Transformed`), the spawned actor is
- * controlled directly and keeps the (invisible) Player actor glued to its position so
- * camera/HUD/etc. keep working. Pressing the button again fades the creature back out
- * (`Player_Action_TransformBack` -> `Player_Action_TransformEnd`) and restores Player, who pops
- * back in at full opacity once the creature is gone. Switching directly between two
- * transformations runs both legs back-to-back (old creature fades out, then the new one fades in)
- * rather than overlapping them, since only one creature's assets fit in the transform space at a
- * time.
- *
- * NOTE: Player's own mesh intentionally does not fade -- an earlier attempt at that drew his
- * LodLimb-based skeleton (see `SkelAnime_InitLink`) through the generic Flex draw functions built
- * for plain StandardLimb skeletons, which crashed the RCP. Player's normal draw path
- * (`Player_DrawGameplay`/`Player_DrawImpl`) is LOD- and equipment-aware and doesn't have an
- * alpha-blending equivalent; giving Player himself a real fade would need a proper alpha-capable
- * LOD draw path, not a quick patch.
+ * the dedicated transform space and spawns the transformation actor in Player's place; the switch
+ * is instant. Player is hidden/frozen immediately and control hands off. While transformed
+ * (`Player_Action_Transformed`), the spawned actor is controlled directly and keeps the
+ * (invisible) Player actor glued to its position so camera/HUD/etc. keep working. Pressing the
+ * button again instantly kills the creature and restores Player. Switching directly between two
+ * transformations kills the old creature and spawns the new one in the same call, since only one
+ * creature's assets fit in the transform space at a time.
  ************************************************************/
 
 s32 Player_SetupAction(PlayState* play, Player* this, PlayerActionFunc actionFunc, s32 flags);
 void func_8083A060(Player* this, PlayState* play);
 void func_8083C0E8(Player* this, PlayState* play);
 
-void Player_Action_Transform(Player* this, PlayState* play);
 void Player_Action_Transformed(Player* this, PlayState* play);
-void Player_Action_TransformBack(Player* this, PlayState* play);
-void Player_Action_TransformEnd(Player* this, PlayState* play);
-
-void Player_SetupTransformBack(Player* this, PlayState* play) {
-    Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
-    Player_SetupAction(play, this, Player_Action_TransformBack, 0);
-    this->stateFlags3 |= PLAYER_STATE3_TRANSFORMING;
-    this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMED;
-    TransformFade_BeginFadeOut();
-}
-
-void Player_InitiateTransformation(Player* this, PlayState* play, s16 transformActorId, s16 objectId, u16 sfxId) {
-    if ((this->transformActor != NULL) && (this->transformActor->id == transformActorId)) {
-        Player_SetupTransformBack(this, play);
-    } else {
-        Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
-        Player_PlaySfx(this, sfxId);
-        Player_SetupAction(play, this, Player_Action_Transform, 0);
-        this->transformActorId = transformActorId;
-        this->transformObjectId = objectId;
-        this->stateFlags3 |= PLAYER_STATE3_TRANSFORMING;
-
-        if ((this->transformActor != NULL) && (this->transformActor->update != NULL)) {
-            TransformFade_BeginFadeOut();
-        }
-    }
-}
-
-s32 Player_CheckTransform(Player* this, PlayState* play) {
-    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DLEFT)) {
-        Player_InitiateTransformation(this, play, ACTOR_TRANSFORM_BABY_GOHMA, OBJECT_GOL_BABY, NA_SE_EN_GOMA_BJR_CRY);
-        return true;
-    }
-    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DRIGHT)) {
-        Player_InitiateTransformation(this, play, ACTOR_TRANSFORM_IK, OBJECT_IK_TRANSFORM, NA_SE_EN_IRONNACK_WAKEUP);
-        return true;
-    }
-    return false;
-}
 
 void Player_DisableTransform(Player* this, PlayState* play) {
     this->stateFlags2 &= ~(PLAYER_STATE2_29 | PLAYER_STATE2_15); // re-enable player draw + updating
     this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMED;
     play->interfaceCtx.unk_1FA = false; // clear B button text
-    TransformFade_Reset();
 
     if ((this->transformActor != NULL) && (this->transformActor->update != NULL)) {
         Actor_Kill(this->transformActor);
@@ -2723,19 +2670,51 @@ void Player_DisableTransform(Player* this, PlayState* play) {
     this->actor.shape.shadowDraw = ActorShadow_DrawFeet;
 }
 
-void Player_Action_TransformEnd(Player* this, PlayState* play) {
-    this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMING;
-    func_8083C0E8(this, play); // return to standing still
+void Player_InitiateTransformation(Player* this, PlayState* play, s16 transformActorId, s16 objectId, u16 sfxId) {
+    if ((this->transformActor != NULL) && (this->transformActor->id == transformActorId)) {
+        // Pressing the same transformation's button again: revert to Link immediately
+        Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
+        Player_DisableTransform(this, play);
+        func_8083C0E8(this, play); // return to standing still
+        return;
+    }
+
+    Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
+    Player_PlaySfx(this, sfxId);
+
+    // Switching directly from one transformation to another: drop the old creature first
+    if ((this->transformActor != NULL) && (this->transformActor->update != NULL)) {
+        Actor_Kill(this->transformActor);
+    }
+    this->transformActor = NULL;
+
+    Object_LoadTransform(&play->objectCtx, objectId);
+    this->transformActor = Actor_Spawn(&play->actorCtx, play, transformActorId, this->actor.world.pos.x,
+                                       this->actor.world.pos.y, this->actor.world.pos.z, this->actor.world.rot.x,
+                                       this->actor.world.rot.y, this->actor.world.rot.z, 0);
+
+    if (this->transformActor == NULL) {
+        // Spawn failed (e.g. actor limit reached): stay as Link
+        Sfx_PlaySfxCentered(NA_SE_SY_ERROR);
+        return;
+    }
+
+    this->stateFlags2 |= PLAYER_STATE2_29 | PLAYER_STATE2_15;
+    this->stateFlags3 |= PLAYER_STATE3_TRANSFORMED;
+    this->actor.shape.shadowDraw = NULL;
+    Player_SetupAction(play, this, Player_Action_Transformed, 0);
 }
 
-void Player_Action_TransformBack(Player* this, PlayState* play) {
-    this->actor.speed = this->speedXZ = 0.0f;
-
-    if (TransformFade_Update()) {
-        // Creature fully faded out: Player pops back in at full opacity
-        Player_DisableTransform(this, play);
-        Player_SetupAction(play, this, Player_Action_TransformEnd, 0);
+s32 Player_CheckTransform(Player* this, PlayState* play) {
+    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DLEFT)) {
+        Player_InitiateTransformation(this, play, ACTOR_TRANSFORM_BABY_GOHMA, OBJECT_GOL, NA_SE_EN_GOMA_BJR_CRY);
+        return true;
     }
+    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DRIGHT)) {
+        Player_InitiateTransformation(this, play, ACTOR_TRANSFORM_IK, OBJECT_IK, NA_SE_EN_IRONNACK_WAKEUP);
+        return true;
+    }
+    return false;
 }
 
 void Player_Action_Transformed(Player* this, PlayState* play) {
@@ -2744,52 +2723,7 @@ void Player_Action_Transformed(Player* this, PlayState* play) {
         Player_DisableTransform(this, play);
         func_8083A060(this, play); // return to standing still
     } else {
-        // Transform back or switch directly to another transformation; the current creature stays
-        // alive until it fades out (killed in `Player_DisableTransform` or `Player_Action_Transform`
-        // respectively)
         Player_CheckTransform(this, play);
-    }
-}
-
-void Player_Action_Transform(Player* this, PlayState* play) {
-    this->actor.speed = this->speedXZ = 0.0f;
-
-    if ((this->transformActor != NULL) && (this->transformActor->update != NULL) &&
-        (this->transformActor->id != this->transformActorId)) {
-        if (!TransformFade_Update()) {
-            return;
-        }
-        Actor_Kill(this->transformActor);
-        this->transformActor = NULL;
-    }
-
-    if (this->transformActor == NULL) {
-        Object_LoadTransform(&play->objectCtx, this->transformObjectId);
-        this->transformActor = Actor_Spawn(&play->actorCtx, play, this->transformActorId, this->actor.world.pos.x,
-                                           this->actor.world.pos.y, this->actor.world.pos.z, this->actor.world.rot.x,
-                                           this->actor.world.rot.y, this->actor.world.rot.z, 0);
-
-        if (this->transformActor == NULL) {
-            // Spawn failed (e.g. actor limit reached): revert with Link still in control
-            Sfx_PlaySfxCentered(NA_SE_SY_ERROR);
-            Player_DisableTransform(this, play);
-            Player_SetupAction(play, this, Player_Action_TransformEnd, 0);
-            return;
-        }
-
-        // Freeze Player's control immediately, but keep him drawing until the creature has
-        // fully faded in on top of him
-        this->stateFlags2 |= PLAYER_STATE2_15;
-        TransformFade_BeginFadeIn();
-    }
-
-    if (TransformFade_Update()) {
-        // Creature fully visible now: hide Player and hand off control
-        this->stateFlags2 |= PLAYER_STATE2_29;
-        this->stateFlags3 |= PLAYER_STATE3_TRANSFORMED;
-        this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMING;
-        this->actor.shape.shadowDraw = NULL;
-        Player_SetupAction(play, this, Player_Action_Transformed, 0);
     }
 }
 
@@ -11108,7 +11042,7 @@ static f32 D_80854784[] = { 120.0f, 240.0f, 360.0f };
  */
 void Player_UpdateInterface(PlayState* play, Player* this) {
     // HackerOoT: the transformation actor drives the A/B button actions itself
-    if (this->stateFlags3 & (PLAYER_STATE3_TRANSFORMED | PLAYER_STATE3_TRANSFORMING)) {
+    if (this->stateFlags3 & PLAYER_STATE3_TRANSFORMED) {
         return;
     }
 
@@ -11950,7 +11884,7 @@ void Player_UpdateCommon(Player* this, PlayState* play, Input* input) {
 
     // HackerOoT: while transformed (or mid-fade), only run the transform action function; the
     // creature actor handles movement/collision/interface itself
-    if (this->stateFlags3 & (PLAYER_STATE3_TRANSFORMED | PLAYER_STATE3_TRANSFORMING)) {
+    if (this->stateFlags3 & PLAYER_STATE3_TRANSFORMED) {
         this->actionFunc(this, play);
 
         if (this->csAction == PLAYER_CSACTION_7) {
