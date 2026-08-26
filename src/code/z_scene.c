@@ -97,8 +97,8 @@ void Object_InitContext(PlayState* play, ObjectContext* objectCtx) {
 
     // HackerOoT: reserve space for on-demand loading of transformation objects (see `Object_LoadTransform`).
     // Double-buffered; see the comment on `ObjectContext.transformSpaceStart`.
-    objectCtx->transformSpaceStart[0] = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, "../z_scene.c", 219);
-    objectCtx->transformSpaceStart[1] = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, "../z_scene.c", 219);
+    objectCtx->transformSpaceStart[0] = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, __FILE__, __LINE__);
+    objectCtx->transformSpaceStart[1] = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, __FILE__, __LINE__);
     objectCtx->transformSpaceIndex = 0;
     objectCtx->loadedTransformObjectId = -1;
 
@@ -131,7 +131,7 @@ void Object_LoadTransform(ObjectContext* objectCtx, s16 objectId) {
     // already-submitted display list might still be referencing on the RCP.
     nextIndex = objectCtx->transformSpaceIndex ^ 1;
     DMA_REQUEST_SYNC(objectCtx->transformSpaceStart[nextIndex], gObjectTable[objectId].vromStart, size, __FILE__,
-                      __LINE__);
+                     __LINE__);
     objectCtx->transformSpaceIndex = nextIndex;
 
     objectCtx->loadedTransformObjectId = objectId;

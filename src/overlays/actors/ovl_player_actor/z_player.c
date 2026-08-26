@@ -51,6 +51,7 @@
 #include "save.h"
 #include "skin_matrix.h"
 #include "z_debug.h"
+#include "transform.h"
 
 #include "assets/objects/gameplay_keep/gameplay_keep.h"
 #include "assets/objects/object_link_child/object_link_child.h"
@@ -2639,93 +2640,177 @@ s32 Player_GetItemOnButton(PlayState* play, s32 index) {
     }
 }
 
-/************************************************************
- * HackerOoT: player transformations
- *
- * Pressing a transformation button (see `Player_CheckTransform`) loads the creature's object into
- * the dedicated transform space and spawns the transformation actor in Player's place; the switch
- * is instant. Player is hidden/frozen immediately and control hands off. While transformed
- * (`Player_Action_Transformed`), the spawned actor is controlled directly and keeps the
- * (invisible) Player actor glued to its position so camera/HUD/etc. keep working. Pressing the
- * button again instantly kills the creature and restores Player. Switching directly between two
- * transformations kills the old creature and spawns the new one in the same call, since only one
- * creature's assets fit in the transform space at a time.
- ************************************************************/
-
 s32 Player_SetupAction(PlayState* play, Player* this, PlayerActionFunc actionFunc, s32 flags);
 void func_8083A060(Player* this, PlayState* play);
 void func_8083C0E8(Player* this, PlayState* play);
 
+void Player_InitiateTransformation(Player* this, PlayState* play, TransformData* transformData);
+
+#ifdef TRANSFORM_ORB
+void Player_Action_TransformCurrentForm(Player* this, PlayState* play);
+void Player_Action_TransformNextForm(Player* this, PlayState* play);
+#endif
+void Player_Action_Transform(Player* this, PlayState* play);
 void Player_Action_Transformed(Player* this, PlayState* play);
+
+static TransformData sTransformData[] = {
+    { ACTOR_TRANSFORM_BABY_GOHMA, OBJECT_GOL, NA_SE_EN_GOMA_BJR_CRY, 0.01f },
+    { ACTOR_TRANSFORM_IK, OBJECT_IK, NA_SE_EN_IRONNACK_WAKEUP, 0.011f },
+};
+
+#define TRANSFORMATION_SIZING_DURATION 12
+#define PLAYER_SCALE 0.01f
+#define ORB_Y_OFFSET 50.0f
+#define ORB_SIZE 12000
+
+s32 Player_IsTransformed(Player* this) {
+    return (this->transformActor != NULL) && (this->transformActor->update != NULL);
+}
+
+TransformData* getTransformDataForCurrentTransform(Player* this) {
+    u32 i;
+
+    if (!Player_IsTransformed(this)) {
+        return NULL;
+    }
+    for (i = 0; i < sizeof(sTransformData) / sizeof(TransformData); i++) {
+        if (sTransformData[i].actorId == this->transformActor->id) {
+            return &sTransformData[i];
+        }
+    }
+    return NULL;
+}
+
+s32 Player_CheckTransform(Player* this, PlayState* play) {
+    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DLEFT)) {
+        Player_InitiateTransformation(this, play, &sTransformData[0]);
+        return true;
+    }
+    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DRIGHT)) {
+        Player_InitiateTransformation(this, play, &sTransformData[1]);
+        return true;
+    }
+    return false;
+}
+
+void Player_InitiateTransformation(Player* this, PlayState* play, TransformData* transformData) {
+    this->transformDataFrom = getTransformDataForCurrentTransform(this);
+    this->transformDataTo = transformData;
+    Player_SetupAction(play, this, Player_Action_Transform, 0);
+    this->av2.transformationTimer = 16;
+}
 
 void Player_DisableTransform(Player* this, PlayState* play) {
     this->stateFlags2 &= ~(PLAYER_STATE2_29 | PLAYER_STATE2_15); // re-enable player draw + updating
     this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMED;
     play->interfaceCtx.unk_1FA = false; // clear B button text
 
-    if ((this->transformActor != NULL) && (this->transformActor->update != NULL)) {
+    if (Player_IsTransformed(this)) {
         Actor_Kill(this->transformActor);
     }
     this->transformActor = NULL;
     this->actor.shape.shadowDraw = ActorShadow_DrawFeet;
 }
 
-void Player_InitiateTransformation(Player* this, PlayState* play, s16 transformActorId, s16 objectId, u16 sfxId) {
-    if ((this->transformActor != NULL) && (this->transformActor->id == transformActorId)) {
-        // Pressing the same transformation's button again: revert to Link immediately
-        Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
-        Player_DisableTransform(this, play);
-        func_8083C0E8(this, play); // return to standing still
-        return;
+void Player_Action_Transform(Player* this, PlayState* play) {
+    Actor_Spawn(&play->actorCtx, play, ACTOR_DEMO_EFFECT, this->actor.world.pos.x, this->actor.world.pos.y,
+                this->actor.world.pos.z, 0, 0, 0, 0x0019);
+    if (DECR(this->av2.transformationTimer) == 0) {
+        Player_SetupAction(play, this, Player_Action_Transformed, 0);
     }
-
-    Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
-    Player_PlaySfx(this, sfxId);
-
-    // Switching directly from one transformation to another: drop the old creature first
-    if ((this->transformActor != NULL) && (this->transformActor->update != NULL)) {
-        Actor_Kill(this->transformActor);
-    }
-    this->transformActor = NULL;
-
-    Object_LoadTransform(&play->objectCtx, objectId);
-    this->transformActor = Actor_Spawn(&play->actorCtx, play, transformActorId, this->actor.world.pos.x,
-                                       this->actor.world.pos.y, this->actor.world.pos.z, this->actor.world.rot.x,
-                                       this->actor.world.rot.y, this->actor.world.rot.z, 0);
-
-    if (this->transformActor == NULL) {
-        // Spawn failed (e.g. actor limit reached): stay as Link
-        Sfx_PlaySfxCentered(NA_SE_SY_ERROR);
-        return;
-    }
-
-    this->stateFlags2 |= PLAYER_STATE2_29 | PLAYER_STATE2_15;
-    this->stateFlags3 |= PLAYER_STATE3_TRANSFORMED;
-    this->actor.shape.shadowDraw = NULL;
-    Player_SetupAction(play, this, Player_Action_Transformed, 0);
-}
-
-s32 Player_CheckTransform(Player* this, PlayState* play) {
-    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DLEFT)) {
-        Player_InitiateTransformation(this, play, ACTOR_TRANSFORM_BABY_GOHMA, OBJECT_GOL, NA_SE_EN_GOMA_BJR_CRY);
-        return true;
-    }
-    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DRIGHT)) {
-        Player_InitiateTransformation(this, play, ACTOR_TRANSFORM_IK, OBJECT_IK, NA_SE_EN_IRONNACK_WAKEUP);
-        return true;
-    }
-    return false;
 }
 
 void Player_Action_Transformed(Player* this, PlayState* play) {
     if ((this->transformActor == NULL) || (this->transformActor->update == NULL)) {
-        // The creature despawned/died on its own (e.g. ran out of health): revert instantly
         Player_DisableTransform(this, play);
         func_8083A060(this, play); // return to standing still
     } else {
         Player_CheckTransform(this, play);
     }
 }
+
+#ifdef TRANSFORM_ORB
+void Player_SpawnOrbEffect(Player* this, PlayState* play, Vec3f* position, s16 scale) {
+    Vec3f velocity = { 0, 0, 0 };
+    Vec3f accel = { 0, 0, 0 };
+    Color_RGBA8 primColor = { 255, 255, 255, 255 };
+    Color_RGBA8 envColor = { 128, 0, 128, 255 };
+    u32 i;
+
+    for (i = 0; i < 6; i++) {
+        EffectSsKiraKira_SpawnFocused(play, position, &velocity, &accel, &primColor, &envColor, scale, 8);
+    }
+}
+
+void Player_InitiateTransformation(Player* this, PlayState* play, TransformData* transformData) {
+    this->transformDataFrom = getTransformDataForCurrentTransform(this);
+    this->transformDataTo = transformData;
+    Player_SetupAction(play, this, Player_Action_TransformCurrentForm, 0);
+    this->av2.transformationTimer = TRANSFORMATION_SIZING_DURATION;
+}
+
+void Player_Action_TransformCurrentForm(Player* this, PlayState* play) {
+    Vec3f orbPosition;
+    f32 normalizedTimer = ((f32)this->av2.transformationTimer) / (f32)TRANSFORMATION_SIZING_DURATION;
+    Actor* targetActor = this->transformActor != NULL ? this->transformActor : &this->actor;
+    f32 targetScale = this->transformActor != NULL ? this->transformDataFrom->scale : PLAYER_SCALE;
+
+    Math_Vec3f_Copy(&orbPosition, &this->actor.world.pos);
+    orbPosition.y += ORB_Y_OFFSET;
+    Player_SpawnOrbEffect(this, play, &orbPosition, normalizedTimer * ORB_SIZE * 2);
+
+    Actor_SetScale(targetActor, normalizedTimer * targetScale);
+
+    if (DECR(this->av2.transformationTimer) == 0) {
+        if ((this->transformActor != NULL) && (this->transformActor->id == this->transformDataTo->actorId)) {
+            Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
+            Player_DisableTransform(this, play);
+            func_8083C0E8(this, play); // return to standing still
+            Player_SetupAction(play, this, Player_Action_TransformNextForm, 0);
+            this->av2.transformationTimer = TRANSFORMATION_SIZING_DURATION;
+            return;
+        }
+
+        Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
+        Player_PlaySfx(this, this->transformDataTo->sfxId);
+
+        if (Player_IsTransformed(this)) {
+            Actor_Kill(this->transformActor);
+        }
+        this->transformActor = NULL;
+
+        Object_LoadTransform(&play->objectCtx, this->transformDataTo->objectId);
+        this->transformActor = Actor_Spawn(
+            &play->actorCtx, play, this->transformDataTo->actorId, this->actor.world.pos.x, this->actor.world.pos.y,
+            this->actor.world.pos.z, this->actor.world.rot.x, this->actor.world.rot.y, this->actor.world.rot.z, 0);
+        Actor_SetScale(this->transformActor, 0.0f);
+
+        this->stateFlags2 |= PLAYER_STATE2_29 | PLAYER_STATE2_15;
+        this->stateFlags3 |= PLAYER_STATE3_TRANSFORMED;
+        this->actor.shape.shadowDraw = NULL;
+        Player_SetupAction(play, this, Player_Action_TransformNextForm, 0);
+        this->av2.transformationTimer = TRANSFORMATION_SIZING_DURATION;
+    }
+}
+
+void Player_Action_TransformNextForm(Player* this, PlayState* play) {
+    Vec3f orbPosition;
+    f32 normalizedTimer = ((f32)this->av2.transformationTimer) / (f32)TRANSFORMATION_SIZING_DURATION;
+    Actor* targetActor = this->transformActor != NULL ? this->transformActor : &this->actor;
+    f32 targetScale = this->transformActor != NULL ? this->transformDataTo->scale : PLAYER_SCALE;
+
+    Math_Vec3f_Copy(&orbPosition, &this->actor.world.pos);
+    orbPosition.y += ORB_Y_OFFSET;
+    Player_SpawnOrbEffect(this, play, &orbPosition, normalizedTimer * ORB_SIZE * 2);
+
+    Actor_SetScale(targetActor, (1 - normalizedTimer) * targetScale);
+
+    if (DECR(this->av2.transformationTimer) == 0) {
+        Actor_SetScale(targetActor, targetScale);
+        Player_SetupAction(play, this, Player_Action_Transformed, 0);
+    }
+}
+#endif
 
 /**
  * Handles the high level item usage and changing process based on the B and C buttons.
@@ -10851,7 +10936,6 @@ void Player_Init(Actor* thisx, PlayState* play2) {
     this->ageProperties = &sAgeProperties[gSaveContext.save.linkAge];
     this->itemAction = this->heldItemAction = -1;
 
-    // HackerOoT: any transformation ends when Player respawns (scene transition, void out, ...)
     this->transformActor = NULL;
     this->heldItemId = ITEM_NONE;
 

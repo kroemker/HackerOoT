@@ -5,6 +5,7 @@
 #include "alignment.h"
 #include "face_change.h"
 #include "config.h"
+#include "transform.h"
 
 struct Player;
 
@@ -941,6 +942,7 @@ typedef struct Player {
         s16 csDelayTimer; // Player_Action_WaitForCutscene: Number of frames to wait before responding to a cutscene
         s16 playedLandingSfx; // Player_Action_BlueWarpArrive: Played sfx when landing on the ground
         s16 appearTimer; // Player_Action_FaroresWindArrive: Counts up, appear at 20 frames (1 second)
+        s16 transformationTimer;
     } av2; // "Action Variable 2": context dependent variable that has different meanings depending on what action is currently running
 
     /* 0x0854 */ f32 unk_854;
@@ -999,9 +1001,9 @@ typedef struct Player {
     /* 0x0A86 */ s8 unk_A86;
     /* 0x0A87 */ u8 unk_A87;
     /* 0x0A88 */ Vec3f unk_A88; // previous body part 0 position
-    // HackerOoT: non-NULL while Player is hidden/frozen and possessed by a transformation actor
-    // (see `Player_InitiateTransformation` and `Player_Action_Transformed`)
     Actor* transformActor;
+    TransformData* transformDataFrom;
+    TransformData* transformDataTo;
 } Player;
 
 // z_player_lib.c
