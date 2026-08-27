@@ -20,6 +20,7 @@
 SceneCmdHandlerFunc sSceneCmdHandlers[SCENE_CMD_ID_MAX];
 RomFile sNaviQuestHintFiles[];
 
+#ifdef LEGACY_OBJECT_SYSTEM
 /**
  * Spawn an object file of a specified ID that will persist through room changes.
  *
@@ -32,7 +33,7 @@ RomFile sNaviQuestHintFiles[];
  * persistent, which will likely cause either the amount of free slots or object space memory to run out.
  * This function is only meant to be called internally on scene load, before the object list from any room is processed.
  */
-s32 Object_SpawnPersistent(ObjectContext* objectCtx, s16 objectId) {
+s32 Object_SpawnPersistent(ObjectContextLegacy* objectCtx, s16 objectId) {
     u32 size;
 
     objectCtx->slots[objectCtx->numEntries].id = objectId;
@@ -71,7 +72,7 @@ s32 Object_SpawnPersistent(ObjectContext* objectCtx, s16 objectId) {
 #define OBJECT_SPACE_ADJUSTMENT (4 * 1024)
 #endif
 
-void Object_InitContext(PlayState* play, ObjectContext* objectCtx) {
+void Object_InitContext(PlayState* play, ObjectContextLegacy* objectCtx) {
     PlayState* play2 = play;
     s32 pad;
     u32 spaceSize;
@@ -96,7 +97,7 @@ void Object_InitContext(PlayState* play, ObjectContext* objectCtx) {
     objectCtx->spaceEnd = (void*)((uintptr_t)objectCtx->spaceStart + spaceSize);
 
     // HackerOoT: reserve space for on-demand loading of transformation objects (see `Object_LoadTransform`).
-    // Double-buffered; see the comment on `ObjectContext.transformSpaceStart`.
+    // Double-buffered; see the comment on `ObjectContextLegacy.transformSpaceStart`.
     objectCtx->transformSpaceStart[0] = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, __FILE__, __LINE__);
     objectCtx->transformSpaceStart[1] = GAME_STATE_ALLOC(&play->state, TRANSFORM_OBJECT_SPACE, __FILE__, __LINE__);
     objectCtx->transformSpaceIndex = 0;
@@ -111,7 +112,7 @@ void Object_InitContext(PlayState* play, ObjectContext* objectCtx) {
  * Actors spawned with `TRANSFORM_OBJECT_SLOT` as their object slot (see `Actor_Spawn`) use this
  * space as their object segment, independently of the scene's object list.
  */
-void Object_LoadTransform(ObjectContext* objectCtx, s16 objectId) {
+void Object_LoadTransform(ObjectContextLegacy* objectCtx, s16 objectId) {
     u32 size;
     s32 nextIndex;
 
@@ -127,7 +128,7 @@ void Object_LoadTransform(ObjectContext* objectCtx, s16 objectId) {
     ASSERT(size <= TRANSFORM_OBJECT_SPACE, "size <= TRANSFORM_OBJECT_SPACE", __FILE__, __LINE__);
 
     // DMA into the buffer that isn't currently active (see the comment on
-    // `ObjectContext.transformSpaceStart`) so we never overwrite data a previous frame's
+    // `ObjectContextLegacy.transformSpaceStart`) so we never overwrite data a previous frame's
     // already-submitted display list might still be referencing on the RCP.
     nextIndex = objectCtx->transformSpaceIndex ^ 1;
     DMA_REQUEST_SYNC(objectCtx->transformSpaceStart[nextIndex], gObjectTable[objectId].vromStart, size, __FILE__,
@@ -137,9 +138,9 @@ void Object_LoadTransform(ObjectContext* objectCtx, s16 objectId) {
     objectCtx->loadedTransformObjectId = objectId;
 }
 
-void Object_UpdateEntries(ObjectContext* objectCtx) {
+void Object_UpdateEntries(ObjectContextLegacy* objectCtx) {
     s32 i;
-    ObjectEntry* entry = &objectCtx->slots[0];
+    ObjectEntryLegacy* entry = &objectCtx->slots[0];
     RomFile* objectFile;
     u32 size;
 
@@ -162,7 +163,7 @@ void Object_UpdateEntries(ObjectContext* objectCtx) {
     }
 }
 
-s32 Object_GetSlot(ObjectContext* objectCtx, s16 objectId) {
+s32 Object_GetSlot(ObjectContextLegacy* objectCtx, s16 objectId) {
     s32 i;
 
     for (i = 0; i < objectCtx->numEntries; i++) {
@@ -174,7 +175,7 @@ s32 Object_GetSlot(ObjectContext* objectCtx, s16 objectId) {
     return -1;
 }
 
-s32 Object_IsLoaded(ObjectContext* objectCtx, s32 slot) {
+s32 Object_IsLoaded(ObjectContextLegacy* objectCtx, s32 slot) {
     // HackerOoT: the transform slot is loaded synchronously, outside of the regular slots
     if (slot == TRANSFORM_OBJECT_SLOT) {
         return objectCtx->loadedTransformObjectId >= 0;
@@ -187,7 +188,7 @@ s32 Object_IsLoaded(ObjectContext* objectCtx, s32 slot) {
     }
 }
 
-void func_800981B8(ObjectContext* objectCtx) {
+void func_800981B8(ObjectContextLegacy* objectCtx) {
     s32 i;
     s32 id;
     u32 size;
@@ -202,8 +203,8 @@ void func_800981B8(ObjectContext* objectCtx) {
     }
 }
 
-void* func_800982FC(ObjectContext* objectCtx, s32 slot, s16 objectId) {
-    ObjectEntry* entry = &objectCtx->slots[slot];
+void* func_800982FC(ObjectContextLegacy* objectCtx, s32 slot, s16 objectId) {
+    ObjectEntryLegacy* entry = &objectCtx->slots[slot];
     RomFile* objectFile = &gObjectTable[objectId];
     u32 size;
     void* nextPtr;
@@ -223,6 +224,7 @@ void* func_800982FC(ObjectContext* objectCtx, s32 slot, s16 objectId) {
 
     return nextPtr;
 }
+#endif
 
 s32 Scene_ExecuteCommands(PlayState* play, SceneCmd* sceneCmd) {
     while (true) {
@@ -259,7 +261,7 @@ BAD_RETURN(s32) Scene_CommandPlayerEntryList(PlayState* play, SceneCmd* cmd) {
     linkObjectId = gLinkObjectIds[((void)0, gSaveContext.save.linkAge)];
 
     gActorOverlayTable[playerEntry->id].profile->objectId = linkObjectId;
-    Object_SpawnPersistent(&play->objectCtx, linkObjectId);
+    Object_LoadSync(&play->objectCtx, linkObjectId);
 }
 
 BAD_RETURN(s32) Scene_CommandActorEntryList(PlayState* play, SceneCmd* cmd) {
@@ -294,8 +296,8 @@ BAD_RETURN(s32) Scene_CommandSpawnList(PlayState* play, SceneCmd* cmd) {
 
 BAD_RETURN(s32) Scene_CommandSpecialFiles(PlayState* play, SceneCmd* cmd) {
     if (cmd->specialFiles.keepObjectId != OBJECT_INVALID) {
-        play->objectCtx.subKeepSlot = Object_SpawnPersistent(&play->objectCtx, cmd->specialFiles.keepObjectId);
-        gSegments[5] = OS_K0_TO_PHYSICAL(play->objectCtx.slots[play->objectCtx.subKeepSlot].segment);
+        void* subKeepStart = Object_LoadSync(&play->objectCtx, cmd->specialFiles.keepObjectId);
+        gSegments[5] = OS_K0_TO_PHYSICAL(subKeepStart);
     }
 
     if (cmd->specialFiles.naviQuestHintFileId != NAVI_QUEST_HINTS_NONE) {
@@ -315,12 +317,13 @@ BAD_RETURN(s32) Scene_CommandRoomShape(PlayState* play, SceneCmd* cmd) {
 }
 
 BAD_RETURN(s32) Scene_CommandObjectList(PlayState* play, SceneCmd* cmd) {
+#ifdef LEGACY_OBJECT_SYSTEM
     s32 i;
     s32 j;
     s32 k;
-    ObjectEntry* entry;
-    ObjectEntry* invalidatedEntry;
-    ObjectEntry* entries;
+    ObjectEntryLegacy* entry;
+    ObjectEntryLegacy* invalidatedEntry;
+    ObjectEntryLegacy* entries;
     s16* objectListEntry = SEGMENTED_TO_VIRTUAL(cmd->objectList.data);
     void* nextPtr;
 
@@ -364,6 +367,7 @@ BAD_RETURN(s32) Scene_CommandObjectList(PlayState* play, SceneCmd* cmd) {
     }
 
     play->objectCtx.numEntries = i;
+#endif
 }
 
 BAD_RETURN(s32) Scene_CommandLightList(PlayState* play, SceneCmd* cmd) {
