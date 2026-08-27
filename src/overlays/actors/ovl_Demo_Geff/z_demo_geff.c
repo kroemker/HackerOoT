@@ -201,7 +201,7 @@ void func_80978370(DemoGeff* this, PlayState* play) {
 }
 
 void func_809783D4(DemoGeff* this, PlayState* play) {
-    ObjectContextLegacy* objCtx = &play->objectCtx;
+    ObjectContext* objCtx = &play->objectCtx;
     Actor* thisx = &this->actor;
     s32 params = thisx->params;
     s16 objectId = sObjectIds[params];

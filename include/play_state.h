@@ -35,19 +35,18 @@ struct QuestHintCmd;
 struct VisMono;
 
 typedef enum PauseBgPreRenderState {
-    /* 0 */ PAUSE_BG_PRERENDER_OFF,     // Inactive, do nothing.
-    /* 1 */ PAUSE_BG_PRERENDER_SETUP,   // The current frame is only drawn for the purpose of serving as the pause
-                                        // background.
+    /* 0 */ PAUSE_BG_PRERENDER_OFF, // Inactive, do nothing.
+    /* 1 */ PAUSE_BG_PRERENDER_SETUP, // The current frame is only drawn for the purpose of serving as the pause background.
     /* 2 */ PAUSE_BG_PRERENDER_PROCESS, // The previous frame was PAUSE_BG_PRERENDER_SETUP, now apply prerender filters.
-    /* 3 */ PAUSE_BG_PRERENDER_READY,   // The pause background is ready to be used.
+    /* 3 */ PAUSE_BG_PRERENDER_READY, // The pause background is ready to be used.
     /* 4 */ PAUSE_BG_PRERENDER_MAX
 } PauseBgPreRenderState;
 
 typedef enum TransitionTileState {
-    /* 0 */ TRANS_TILE_OFF,     // Inactive, do nothing
-    /* 1 */ TRANS_TILE_SETUP,   // Save the necessary buffers
+    /* 0 */ TRANS_TILE_OFF, // Inactive, do nothing
+    /* 1 */ TRANS_TILE_SETUP, // Save the necessary buffers
     /* 2 */ TRANS_TILE_PROCESS, // Initialize the transition
-    /* 3 */ TRANS_TILE_READY    // The transition is ready, so will update and draw each frame
+    /* 3 */ TRANS_TILE_READY // The transition is ready, so will update and draw each frame
 } TransitionTileState;
 
 typedef struct SceneSequences {
@@ -125,8 +124,7 @@ typedef struct PlayState {
     /* 0x121C7 */ s8 unk_121C7;
     /* 0x121C8 */ TransitionContext transitionCtx;
     /* 0x1241B */ u8 transitionMode; // "fbdemo_wipe_modem"
-    /* 0x1241C */ TransitionFade
-        transitionFadeFlash;    // Transition fade instance which flashes screen, see R_TRANS_FADE_FLASH_ALPHA_STEP
+    /* 0x1241C */ TransitionFade transitionFadeFlash; // Transition fade instance which flashes screen, see R_TRANS_FADE_FLASH_ALPHA_STEP
     /* 0x1242B */ u8 viewpoint; // toggleable camera setting by shops or player. Is also equal to the bgCamIndex + 1
     /* 0x1242C */ SceneTableEntry* loadedScene;
 #if ENABLE_ANIMATED_MATERIALS

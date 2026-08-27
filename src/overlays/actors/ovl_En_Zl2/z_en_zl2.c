@@ -1625,7 +1625,7 @@ void func_80B52114(EnZl2* this, PlayState* play) {
 
 void func_80B521A0(EnZl2* this, PlayState* play) {
     s32 pad;
-    ObjectContextLegacy* objectCtx = &play->objectCtx;
+    ObjectContext* objectCtx = &play->objectCtx;
     s32 objectSlot = Object_GetSlot(objectCtx, OBJECT_ZL2_ANIME1);
     s32 pad2;
 
