@@ -2640,34 +2640,37 @@ s32 Player_GetItemOnButton(PlayState* play, s32 index) {
     }
 }
 
+void Player_SetTurnAroundCamera(PlayState* play, s32 camItemType);
 s32 Player_SetupAction(PlayState* play, Player* this, PlayerActionFunc actionFunc, s32 flags);
 void func_8083A060(Player* this, PlayState* play);
 void func_8083C0E8(Player* this, PlayState* play);
 
 void Player_InitiateTransformation(Player* this, PlayState* play, TransformData* transformData);
-
-#ifdef TRANSFORM_ORB
-void Player_Action_TransformCurrentForm(Player* this, PlayState* play);
-void Player_Action_TransformNextForm(Player* this, PlayState* play);
-#endif
-void Player_Action_Transform(Player* this, PlayState* play);
+void Player_Action_TransformStart(Player* this, PlayState* play);
+void Player_Action_TransformEnd(Player* this, PlayState* play);
+void Player_Action_TransformBack(Player* this, PlayState* play);
 void Player_Action_Transformed(Player* this, PlayState* play);
+void Player_Action_Transform(Player* this, PlayState* play);
 
 static TransformData sTransformData[] = {
-    { ACTOR_TRANSFORM_BABY_GOHMA, OBJECT_GOL, NA_SE_EN_GOMA_BJR_CRY, 0.01f },
-    { ACTOR_TRANSFORM_IK, OBJECT_IK, NA_SE_EN_IRONNACK_WAKEUP, 0.011f },
+    { ACTOR_TRANSFORM_BABY_GOHMA, OBJECT_GOL, NA_SE_EN_GOMA_BJR_CRY },
+    { ACTOR_TRANSFORM_IK, OBJECT_IK, NA_SE_EN_IRONNACK_WAKEUP },
 };
 
-#define TRANSFORMATION_SIZING_DURATION 12
-#define PLAYER_SCALE 0.01f
-#define ORB_Y_OFFSET 50.0f
-#define ORB_SIZE 12000
+#define TRANSFORM_SCREEN_FILL_SPEED 50
+
+void Player_SetupTransformBack(Player* this, PlayState* play) {
+    Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
+    Player_SetupAction(play, this, Player_Action_TransformBack, 0);
+    this->stateFlags3 |= PLAYER_STATE3_TRANSFORMING;
+    this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMED;
+}
 
 s32 Player_IsTransformed(Player* this) {
     return (this->transformActor != NULL) && (this->transformActor->update != NULL);
 }
 
-TransformData* getTransformDataForCurrentTransform(Player* this) {
+TransformData* Player_GetTransformDataForCurrentTransform(Player* this) {
     u32 i;
 
     if (!Player_IsTransformed(this)) {
@@ -2694,123 +2697,111 @@ s32 Player_CheckTransform(Player* this, PlayState* play) {
 }
 
 void Player_InitiateTransformation(Player* this, PlayState* play, TransformData* transformData) {
-    this->transformDataFrom = getTransformDataForCurrentTransform(this);
+    this->transformDataFrom = Player_GetTransformDataForCurrentTransform(this);
     this->transformDataTo = transformData;
-    Player_SetupAction(play, this, Player_Action_Transform, 0);
-    this->av2.transformationTimer = 16;
+    if ((this->transformActor != NULL && this->transformActor->id == transformData->actorId)) {
+        Player_SetupTransformBack(this, play);
+    } else {
+        Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
+        Player_PlaySfx(this, this->transformDataTo->sfxId);
+        Player_SetupAction(play, this, Player_Action_Transform, 0);
+        Camera_RequestSetting(Play_GetCamera(play, CAM_ID_MAIN), CAM_SET_NORMAL0);
+    }
 }
 
 void Player_DisableTransform(Player* this, PlayState* play) {
-    this->stateFlags2 &= ~(PLAYER_STATE2_29 | PLAYER_STATE2_15); // re-enable player draw + updating
-    this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMED;
-    play->interfaceCtx.unk_1FA = false; // clear B button text
-
-    if (Player_IsTransformed(this)) {
+    this->stateFlags2 &= ~(PLAYER_STATE2_29 | PLAYER_STATE2_15); // disable player draw + most updating
+    this->stateFlags3 &= ~(PLAYER_STATE3_TRANSFORMED);
+    play->interfaceCtx.unk_1FA = false; // disable B button text
+    if (this->transformActor != NULL) {
         Actor_Kill(this->transformActor);
     }
     this->transformActor = NULL;
     this->actor.shape.shadowDraw = ActorShadow_DrawFeet;
 }
 
-void Player_Action_Transform(Player* this, PlayState* play) {
-    Actor_Spawn(&play->actorCtx, play, ACTOR_DEMO_EFFECT, this->actor.world.pos.x, this->actor.world.pos.y,
-                this->actor.world.pos.z, 0, 0, 0, 0x0019);
-    if (DECR(this->av2.transformationTimer) == 0) {
-        Player_SetupAction(play, this, Player_Action_Transformed, 0);
-    }
-}
-
-void Player_Action_Transformed(Player* this, PlayState* play) {
-    if ((this->transformActor == NULL) || (this->transformActor->update == NULL)) {
-        Player_DisableTransform(this, play);
-        func_8083A060(this, play); // return to standing still
-    } else {
-        Player_CheckTransform(this, play);
-    }
-}
-
-#ifdef TRANSFORM_ORB
-void Player_SpawnOrbEffect(Player* this, PlayState* play, Vec3f* position, s16 scale) {
-    Vec3f velocity = { 0, 0, 0 };
-    Vec3f accel = { 0, 0, 0 };
-    Color_RGBA8 primColor = { 255, 255, 255, 255 };
-    Color_RGBA8 envColor = { 128, 0, 128, 255 };
-    u32 i;
-
-    for (i = 0; i < 6; i++) {
-        EffectSsKiraKira_SpawnFocused(play, position, &velocity, &accel, &primColor, &envColor, scale, 8);
-    }
-}
-
-void Player_InitiateTransformation(Player* this, PlayState* play, TransformData* transformData) {
-    this->transformDataFrom = getTransformDataForCurrentTransform(this);
-    this->transformDataTo = transformData;
-    Player_SetupAction(play, this, Player_Action_TransformCurrentForm, 0);
-    this->av2.transformationTimer = TRANSFORMATION_SIZING_DURATION;
-}
-
-void Player_Action_TransformCurrentForm(Player* this, PlayState* play) {
-    Vec3f orbPosition;
-    f32 normalizedTimer = ((f32)this->av2.transformationTimer) / (f32)TRANSFORMATION_SIZING_DURATION;
-    Actor* targetActor = this->transformActor != NULL ? this->transformActor : &this->actor;
-    f32 targetScale = this->transformActor != NULL ? this->transformDataFrom->scale : PLAYER_SCALE;
-
-    Math_Vec3f_Copy(&orbPosition, &this->actor.world.pos);
-    orbPosition.y += ORB_Y_OFFSET;
-    Player_SpawnOrbEffect(this, play, &orbPosition, normalizedTimer * ORB_SIZE * 2);
-
-    Actor_SetScale(targetActor, normalizedTimer * targetScale);
-
-    if (DECR(this->av2.transformationTimer) == 0) {
-        if ((this->transformActor != NULL) && (this->transformActor->id == this->transformDataTo->actorId)) {
-            Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
-            Player_DisableTransform(this, play);
-            func_8083C0E8(this, play); // return to standing still
-            Player_SetupAction(play, this, Player_Action_TransformNextForm, 0);
-            this->av2.transformationTimer = TRANSFORMATION_SIZING_DURATION;
-            return;
-        }
-
+/* unused */
+void Player_Action_TransformStart(Player* this, PlayState* play) {
+    if (LinkAnimation_Update(play, &this->skelAnime)) {
         Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
         Player_PlaySfx(this, this->transformDataTo->sfxId);
+        Player_SetupAction(play, this, Player_Action_Transform, 0);
+        Camera_RequestSetting(Play_GetCamera(play, CAM_ID_MAIN), CAM_SET_NORMAL0);
+    }
+}
 
-        if (Player_IsTransformed(this)) {
-            Actor_Kill(this->transformActor);
-        }
-        this->transformActor = NULL;
+void Player_Action_Transform(Player* this, PlayState* play) {
+    this->actor.speed = this->speedXZ = 0.0f;
+    play->envCtx.fillScreen = true;
+    play->envCtx.screenFillColor[0] = 160;
+    play->envCtx.screenFillColor[1] = 160;
+    play->envCtx.screenFillColor[2] = 160;
+    play->envCtx.screenFillColor[3] = play->envCtx.screenFillColor[3] < 255 - TRANSFORM_SCREEN_FILL_SPEED
+                                          ? play->envCtx.screenFillColor[3] + TRANSFORM_SCREEN_FILL_SPEED
+                                          : 255;
 
+    if (play->envCtx.screenFillColor[3] == 255) {
         Object_LoadTransform(&play->objectCtx, this->transformDataTo->objectId);
         this->transformActor = Actor_Spawn(
             &play->actorCtx, play, this->transformDataTo->actorId, this->actor.world.pos.x, this->actor.world.pos.y,
             this->actor.world.pos.z, this->actor.world.rot.x, this->actor.world.rot.y, this->actor.world.rot.z, 0);
-        Actor_SetScale(this->transformActor, 0.0f);
 
-        this->stateFlags2 |= PLAYER_STATE2_29 | PLAYER_STATE2_15;
-        this->stateFlags3 |= PLAYER_STATE3_TRANSFORMED;
-        this->actor.shape.shadowDraw = NULL;
-        Player_SetupAction(play, this, Player_Action_TransformNextForm, 0);
-        this->av2.transformationTimer = TRANSFORMATION_SIZING_DURATION;
+        if (this->transformActor != NULL) {
+            this->stateFlags2 |= PLAYER_STATE2_29 | PLAYER_STATE2_15;
+            this->stateFlags3 |= PLAYER_STATE3_TRANSFORMED;
+            this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMING;
+            this->actor.shape.shadowDraw = NULL;
+            Player_SetupAction(play, this, Player_Action_Transformed, 0);
+        } else {
+            Sfx_PlaySfxCentered(NA_SE_SY_ERROR);
+            func_8083A060(this, play); // return to stand still
+        }
     }
 }
 
-void Player_Action_TransformNextForm(Player* this, PlayState* play) {
-    Vec3f orbPosition;
-    f32 normalizedTimer = ((f32)this->av2.transformationTimer) / (f32)TRANSFORMATION_SIZING_DURATION;
-    Actor* targetActor = this->transformActor != NULL ? this->transformActor : &this->actor;
-    f32 targetScale = this->transformActor != NULL ? this->transformDataTo->scale : PLAYER_SCALE;
-
-    Math_Vec3f_Copy(&orbPosition, &this->actor.world.pos);
-    orbPosition.y += ORB_Y_OFFSET;
-    Player_SpawnOrbEffect(this, play, &orbPosition, normalizedTimer * ORB_SIZE * 2);
-
-    Actor_SetScale(targetActor, (1 - normalizedTimer) * targetScale);
-
-    if (DECR(this->av2.transformationTimer) == 0) {
-        Actor_SetScale(targetActor, targetScale);
-        Player_SetupAction(play, this, Player_Action_Transformed, 0);
+void Player_Action_TransformEnd(Player* this, PlayState* play) {
+    play->envCtx.screenFillColor[3] = play->envCtx.screenFillColor[3] > TRANSFORM_SCREEN_FILL_SPEED
+                                          ? play->envCtx.screenFillColor[3] - TRANSFORM_SCREEN_FILL_SPEED
+                                          : 0;
+    if (play->envCtx.screenFillColor[3] == 0) {
+        this->stateFlags3 &= ~PLAYER_STATE3_TRANSFORMING;
+        play->envCtx.fillScreen = false;
+        // func_8083A060(this, play); //return to stand still
+        func_8083C0E8(this, play); // return to stand still (Player_SetupStandingStillNoMorph)
     }
 }
-#endif
+
+void Player_Action_TransformBack(Player* this, PlayState* play) {
+    this->actor.speed = this->speedXZ = 0.0f;
+    play->envCtx.fillScreen = true;
+    play->envCtx.screenFillColor[0] = 160;
+    play->envCtx.screenFillColor[1] = 160;
+    play->envCtx.screenFillColor[2] = 160;
+    play->envCtx.screenFillColor[3] = play->envCtx.screenFillColor[3] < 255 - TRANSFORM_SCREEN_FILL_SPEED
+                                          ? play->envCtx.screenFillColor[3] + TRANSFORM_SCREEN_FILL_SPEED
+                                          : 255;
+    if (play->envCtx.screenFillColor[3] == 255) {
+        Player_DisableTransform(this, play);
+        Player_SetupAction(play, this, Player_Action_TransformEnd, 0);
+    }
+}
+
+void Player_Action_Transformed(Player* this, PlayState* play) {
+    play->envCtx.screenFillColor[3] = play->envCtx.screenFillColor[3] > TRANSFORM_SCREEN_FILL_SPEED
+                                          ? play->envCtx.screenFillColor[3] - TRANSFORM_SCREEN_FILL_SPEED
+                                          : 0;
+    if (play->envCtx.screenFillColor[3] != 0) {
+        return;
+    }
+    play->envCtx.fillScreen = false;
+
+    if (this->transformActor == NULL || this->transformActor->update == NULL) {
+        Player_DisableTransform(this, play);
+        func_8083A060(this, play); // return to stand still
+    } else if (Player_CheckTransform(this, play)) {
+        Actor_Kill(this->transformActor);
+    }
+}
 
 /**
  * Handles the high level item usage and changing process based on the B and C buttons.
@@ -2837,7 +2828,6 @@ void Player_ProcessItemButtons(Player* this, PlayState* play) {
     }
 
     if (!(this->stateFlags1 & (PLAYER_STATE1_CARRYING_ACTOR | PLAYER_STATE1_29)) && !func_8008F128(this)) {
-        // HackerOoT: transformation buttons take priority over item usage
         if (Player_CheckTransform(this, play)) {
             return;
         }
@@ -11966,9 +11956,7 @@ void Player_UpdateCommon(Player* this, PlayState* play, Input* input) {
 
     sControlInput = input;
 
-    // HackerOoT: while transformed (or mid-fade), only run the transform action function; the
-    // creature actor handles movement/collision/interface itself
-    if (this->stateFlags3 & PLAYER_STATE3_TRANSFORMED) {
+    if (this->stateFlags3 & (PLAYER_STATE3_TRANSFORMED | PLAYER_STATE3_TRANSFORMING)) {
         this->actionFunc(this, play);
 
         if (this->csAction == PLAYER_CSACTION_7) {
