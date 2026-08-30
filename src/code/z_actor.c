@@ -31,6 +31,7 @@
 #include "widescreen.h"
 #include "controller.h"
 #include "seqcmd.h"
+#include "transform.h"
 
 #include "overlays/actors/ovl_Arms_Hook/z_arms_hook.h"
 #include "overlays/actors/ovl_En_Part/z_en_part.h"
@@ -3192,18 +3193,11 @@ void Actor_FreeOverlay(ActorOverlay* actorOverlay) {
     PRINTF_RST();
 }
 
-// HackerOoT: actors the player can transform into. Their objects are loaded on demand into the
-// dedicated transform object space (see `Object_LoadTransform`) instead of a regular object slot.
-static s16 sTransformActors[] = {
-    ACTOR_TRANSFORM_BABY_GOHMA,
-    ACTOR_TRANSFORM_IK,
-};
-
 s32 Actor_IsTransformActor(s16 actorId) {
     s32 i;
 
-    for (i = 0; i < ARRAY_COUNT(sTransformActors); i++) {
-        if (actorId == sTransformActors[i]) {
+    for (i = 0; gTransformData[i].actorId != 0; i++) {
+        if (actorId == gTransformData[i].actorId) {
             return true;
         }
     }

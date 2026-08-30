@@ -2652,12 +2652,23 @@ void Player_Action_TransformBack(Player* this, PlayState* play);
 void Player_Action_Transformed(Player* this, PlayState* play);
 void Player_Action_Transform(Player* this, PlayState* play);
 
-static TransformData sTransformData[] = {
-    { ACTOR_TRANSFORM_BABY_GOHMA, OBJECT_GOL, NA_SE_EN_GOMA_BJR_CRY },
-    { ACTOR_TRANSFORM_IK, OBJECT_IK, NA_SE_EN_IRONNACK_WAKEUP },
-};
-
 #define TRANSFORM_SCREEN_FILL_SPEED 50
+
+s32 Player_CheckTransform(Player* this, PlayState* play) {
+    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DLEFT)) {
+        Player_InitiateTransformation(this, play, &gTransformData[0]);
+        return true;
+    }
+    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DRIGHT)) {
+        Player_InitiateTransformation(this, play, &gTransformData[1]);
+        return true;
+    }
+    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DDOWN)) {
+        Player_InitiateTransformation(this, play, &gTransformData[2]);
+        return true;
+    }
+    return false;
+}
 
 void Player_SetupTransformBack(Player* this, PlayState* play) {
     Player_PlaySfx(this, NA_SE_PL_MAGIC_WIND_WARP);
@@ -2676,24 +2687,12 @@ TransformData* Player_GetTransformDataForCurrentTransform(Player* this) {
     if (!Player_IsTransformed(this)) {
         return NULL;
     }
-    for (i = 0; i < sizeof(sTransformData) / sizeof(TransformData); i++) {
-        if (sTransformData[i].actorId == this->transformActor->id) {
-            return &sTransformData[i];
+    for (i = 0; gTransformData[i].actorId != 0; i++) {
+        if (gTransformData[i].actorId == this->transformActor->id) {
+            return &gTransformData[i];
         }
     }
     return NULL;
-}
-
-s32 Player_CheckTransform(Player* this, PlayState* play) {
-    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DLEFT)) {
-        Player_InitiateTransformation(this, play, &sTransformData[0]);
-        return true;
-    }
-    if (CHECK_BTN_ALL(sControlInput->press.button, BTN_DRIGHT)) {
-        Player_InitiateTransformation(this, play, &sTransformData[1]);
-        return true;
-    }
-    return false;
 }
 
 void Player_InitiateTransformation(Player* this, PlayState* play, TransformData* transformData) {

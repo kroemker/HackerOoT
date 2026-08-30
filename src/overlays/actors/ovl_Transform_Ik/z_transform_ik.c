@@ -136,8 +136,8 @@ void TransformIk_SetupAction(TransformIk* this, PlayState* play, TransformIkActi
 
     this->attackState = 0;
     this->shieldState = 0;
-    this->playedSfx = 0;
     this->queuedAttack = 0;
+    this->playedSfx = 0;
     this->axeCollider.elem.atDmgInfo.dmgFlags = DMG_UNBLOCKABLE;
     this->axeCollider.elem.atDmgInfo.damage = 0x40;
     if (this->actionFunc == TransformIk_Action_Cutscene) {
@@ -163,8 +163,8 @@ void TransformIk_SetupAction(TransformIk* this, PlayState* play, TransformIkActi
         Interface_LoadActionLabelB(play, DO_ACTION_ATTACK);
     } else if (this->actionFunc == TransformIk_Action_SwingAxe) {
         this->actor.speed = 0.0f;
-        Animation_Change(&this->skelAnime, &gIronKnuckleHorizontalAttackAnim, 0.5f, 0.0f, 10.0f,
-                         ANIMMODE_ONCE_INTERP, -4.0f);
+        Animation_Change(&this->skelAnime, &gIronKnuckleHorizontalAttackAnim, 0.5f, 0.0f, 10.0f, ANIMMODE_ONCE_INTERP,
+                         -4.0f);
         Interface_SetDoAction(play, DO_ACTION_NONE);
         Interface_LoadActionLabelB(play, DO_ACTION_NONE);
     } else if (this->actionFunc == TransformIk_Action_VerticalAttack) {
@@ -449,8 +449,8 @@ void TransformIk_Init(Actor* thisx, PlayState* play) {
     EffectBlureInit1 blureInit;
 
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 30.0f);
-    SkelAnime_InitFlex(play, &this->skelAnime, &gIronKnuckleSkel, &gIronKnuckleNabooruSummonAxeAnim,
-                       this->jointTable, this->morphTable, IRON_KNUCKLE_LIMB_MAX);
+    SkelAnime_InitFlex(play, &this->skelAnime, &gIronKnuckleSkel, &gIronKnuckleNabooruSummonAxeAnim, this->jointTable,
+                       this->morphTable, IRON_KNUCKLE_LIMB_MAX);
 
     Collider_InitCylinder(play, &this->bodyCollider);
     Collider_SetCylinder(play, &this->bodyCollider, thisx, &sBodyCollider);
@@ -603,7 +603,8 @@ s32 TransformIk_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Ve
         *dList = gIronKnuckleHelmetDL;
     } else if (limbIndex == IRON_KNUCKLE_LIMB_HEAD) {
         *dList = gIronKnuckleGerudoHeadDL;
-    } else if ((limbIndex == IRON_KNUCKLE_LIMB_CHEST_ARMOR_FRONT) || (limbIndex == IRON_KNUCKLE_LIMB_CHEST_ARMOR_BACK)) {
+    } else if ((limbIndex == IRON_KNUCKLE_LIMB_CHEST_ARMOR_FRONT) ||
+               (limbIndex == IRON_KNUCKLE_LIMB_CHEST_ARMOR_BACK)) {
     } else if ((limbIndex == IRON_KNUCKLE_LIMB_TORSO) || (limbIndex == IRON_KNUCKLE_LIMB_WAIST)) {
         *dList = NULL;
     }

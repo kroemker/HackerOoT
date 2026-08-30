@@ -12,6 +12,7 @@
 #include "player.h"
 #include "save.h"
 #include "skin_matrix.h"
+#include "sfx.h"
 
 #include "assets/objects/gameplay_keep/gameplay_keep.h"
 #include "assets/objects/object_link_boy/object_link_boy.h"
@@ -20,6 +21,13 @@
 
 #pragma increment_block_number "gc-eu:0 gc-eu-mq:0 gc-jp:0 gc-jp-ce:0 gc-jp-mq:0 gc-us:0 gc-us-mq:0 pal-1.0:0" \
                                "pal-1.1:0"
+
+TransformData gTransformData[] = {
+    { ACTOR_TRANSFORM_BABY_GOHMA, OBJECT_GOL, NA_SE_EN_GOMA_BJR_CRY },
+    { ACTOR_TRANSFORM_IK, OBJECT_IK, NA_SE_EN_IRONNACK_WAKEUP },
+    { ACTOR_TRANSFORM_WOLFOS, OBJECT_WF, NA_SE_EN_WOLFOS_APPEAR },
+    { 0, 0, 0 } // 0 entry to determine end
+};
 
 typedef struct BowSlingshotStringData {
     /* 0x00 */ Gfx* dList;
@@ -1027,7 +1035,8 @@ void* sMouthTextures[PLAYER_MOUTH_MAX] = {
 };
 #else
 // Defining `AVOID_UB` will use a 2D array instead and properly use the child link pointers to allow for shifting.
-void* sEyeTextures[][PLAYER_EYES_MAX] = {{
+void* sEyeTextures[][PLAYER_EYES_MAX] = {
+    {
         gLinkAdultEyesOpenTex,    // PLAYER_EYES_OPEN
         gLinkAdultEyesHalfTex,    // PLAYER_EYES_HALF
         gLinkAdultEyesClosedfTex, // PLAYER_EYES_CLOSED
@@ -1037,29 +1046,32 @@ void* sEyeTextures[][PLAYER_EYES_MAX] = {{
         gLinkAdultEyesDownTex,    // PLAYER_EYES_DOWN
         gLinkAdultEyesWincingTex, // PLAYER_EYES_WINCING
     },
-{
-    gLinkChildSkel_gLinkChildEyesOpenTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
-    gLinkChildSkel_gLinkChildEyesHalfTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
-    gLinkChildSkel_gLinkChildEyesClosedfTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
-    gLinkChildSkel_gLinkChildEyesLeftTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
-    gLinkChildSkel_gLinkChildEyesRightTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
-    gLinkChildSkel_gLinkChildEyesWideTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
-    gLinkChildSkel_gLinkChildEyesDownTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
-    gLinkChildSkel_gLinkChildEyesWincingTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
- }};
+    {
+        gLinkChildSkel_gLinkChildEyesOpenTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+        gLinkChildSkel_gLinkChildEyesHalfTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+        gLinkChildSkel_gLinkChildEyesClosedfTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+        gLinkChildSkel_gLinkChildEyesLeftTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+        gLinkChildSkel_gLinkChildEyesRightTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+        gLinkChildSkel_gLinkChildEyesWideTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+        gLinkChildSkel_gLinkChildEyesDownTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+        gLinkChildSkel_gLinkChildEyesWincingTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    }
+};
 
-void* sMouthTextures[][PLAYER_MOUTH_MAX] = {{
+void* sMouthTextures[][PLAYER_MOUTH_MAX] = {
+    {
         gLinkAdultMouthClosedTex, // PLAYER_MOUTH_CLOSED
         gLinkAdultMouthHalfTex,   // PLAYER_MOUTH_HALF
         gLinkAdultMouthOpenTex,   // PLAYER_MOUTH_OPEN
         gLinkAdultMouthSmileTex,  // PLAYER_MOUTH_SMILE
     },
-{
-    gLinkChildSkel_gLinkChildMouthClosedTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
-    gLinkChildSkel_gLinkChildMouthHalfTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
-    gLinkChildSkel_gLinkChildMouthOpenTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
-    gLinkChildSkel_gLinkChildMouthSmileTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
- }};
+    {
+        gLinkChildSkel_gLinkChildMouthClosedTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+        gLinkChildSkel_gLinkChildMouthHalfTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+        gLinkChildSkel_gLinkChildMouthOpenTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+        gLinkChildSkel_gLinkChildMouthSmileTex_ci8_tlut_gLinkChildSkinTLUT_png_001_ci8,
+    }
+};
 #endif
 
 Color_RGB8 sTunicColors[PLAYER_TUNIC_MAX] = {

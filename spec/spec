@@ -1159,6 +1159,13 @@ endseg
 #endif
 
 beginseg
+    name "ovl_Transform_Wolfos"
+    compress
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Transform_Wolfos/z_transform_wolfos.o"
+    include "$(BUILD_DIR)/src/overlays/actors/ovl_Transform_Wolfos/ovl_Transform_Wolfos_reloc.o"
+endseg
+
+beginseg
     name "gameplay_keep"
     compress
     romalign 0x1000

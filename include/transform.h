@@ -9,4 +9,6 @@ typedef struct TransformData {
     u16 sfxId;
 } TransformData;
 
+extern TransformData gTransformData[];
+
 #endif
