@@ -1,0 +1,343 @@
+<title>HackerOoT Memory Map</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#eef1f4;
+    --surface:#ffffff;
+    --surface-2:#e1e7ec;
+    --surface-3:#cfd8e0;
+    --line:#c3ccd4;
+    --line-strong:#9aa7b1;
+    --ink:#16202b;
+    --ink-muted:#57697a;
+    --ink-faint:#8394a1;
+    --accent:#0e7c86;
+    --accent-ink:#075158;
+    --accent-soft:#cdeaea;
+    --dyna:#4d8a5e;
+    --dyna-soft:#d9ecdd;
+    --callout:#b5691a;
+    --callout-soft:#f6e3cc;
+    --shadow: 0 1px 2px rgba(22,32,43,.06), 0 8px 24px -12px rgba(22,32,43,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0d1317;
+      --surface:#141c22;
+      --surface-2:#1c262d;
+      --surface-3:#293540;
+      --line:#2c3843;
+      --line-strong:#3d4c58;
+      --ink:#e8eef2;
+      --ink-muted:#93a5b2;
+      --ink-faint:#6c7d89;
+      --accent:#37c6cf;
+      --accent-ink:#a8ecef;
+      --accent-soft:rgba(55,198,207,.14);
+      --dyna:#6cbf80;
+      --dyna-soft:rgba(108,191,128,.14);
+      --callout:#e3a44c;
+      --callout-soft:rgba(227,164,76,.14);
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1317;
+    --surface:#141c22;
+    --surface-2:#1c262d;
+    --surface-3:#293540;
+    --line:#2c3843;
+    --line-strong:#3d4c58;
+    --ink:#e8eef2;
+    --ink-muted:#93a5b2;
+    --ink-faint:#6c7d89;
+    --accent:#37c6cf;
+    --accent-ink:#a8ecef;
+    --accent-soft:rgba(55,198,207,.14);
+    --dyna:#6cbf80;
+    --dyna-soft:rgba(108,191,128,.14);
+    --callout:#e3a44c;
+    --callout-soft:rgba(227,164,76,.14);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    line-height:1.5;
+  }
+  .mono{ font-family:"IBM Plex Mono", ui-monospace, "SF Mono", monospace; font-variant-numeric:tabular-nums; }
+
+  .page{ max-width:920px; margin:0 auto; padding:48px 28px 80px; }
+
+  header.hero{ margin-bottom:40px; }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--accent-ink); background:var(--accent-soft);
+    border:1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    padding:4px 10px; border-radius:999px; margin-bottom:16px;
+  }
+  h1{
+    font-size:clamp(28px,4vw,38px); font-weight:700; margin:0 0 14px;
+    text-wrap:balance; letter-spacing:-.01em;
+  }
+  .lede{ max-width:66ch; color:var(--ink-muted); font-size:16px; margin:0 0 6px; }
+  .lede strong{ color:var(--ink); font-weight:600; }
+
+  section{ margin-top:56px; }
+  h2{ font-size:20px; font-weight:600; margin:0 0 4px; letter-spacing:-.005em; }
+  .section-sub{ color:var(--ink-faint); font-size:13.5px; margin:0 0 20px; max-width:60ch; }
+
+  figure{ margin:0; background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:20px 24px 16px; box-shadow:var(--shadow); }
+  figure + figure{ margin-top:24px; }
+  figcaption{ margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);
+    font-size:13px; color:var(--ink-muted); }
+  figcaption code{ font-family:"IBM Plex Mono",monospace; font-size:12px; background:var(--surface-2);
+    padding:1px 5px; border-radius:4px; color:var(--ink); }
+
+  svg text{ font-family:"IBM Plex Sans", sans-serif; }
+  svg .mono-text{ font-family:"IBM Plex Mono", monospace; }
+  .fill-static{ fill:var(--surface-3); }
+  .fill-heap{ fill:var(--accent-soft); }
+  .fill-fb{ fill:var(--surface-3); }
+  .fill-fixed{ fill:var(--surface-3); }
+  .fill-tunable{ fill:var(--accent); }
+  .fill-dyna{ fill:var(--dyna-soft); }
+  .fill-dyna-strong{ fill:var(--dyna); }
+  .stroke-line{ stroke:var(--line-strong); }
+  .txt{ fill:var(--ink); }
+  .txt-muted{ fill:var(--ink-muted); }
+  .txt-faint{ fill:var(--ink-faint); }
+  .hatch-static rect{ fill:url(#hatchStatic); }
+  .hatch-dyna rect{ fill:url(#hatchDyna); }
+
+  .legend{ display:flex; flex-wrap:wrap; gap:18px; margin:18px 2px 0; font-size:12.5px; color:var(--ink-muted); }
+  .legend-item{ display:flex; align-items:center; gap:7px; }
+  .swatch{ width:14px; height:14px; border-radius:3px; border:1px solid var(--line-strong); flex:none; }
+
+  .callout-box{
+    display:flex; gap:10px; align-items:flex-start;
+    background:var(--callout-soft); border:1px solid color-mix(in srgb, var(--callout) 40%, transparent);
+    border-radius:10px; padding:12px 14px; margin-top:16px; font-size:13.5px; color:var(--ink);
+  }
+  .callout-box .dot{ width:8px; height:8px; border-radius:50%; background:var(--callout); margin-top:6px; flex:none; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  caption{ text-align:left; font-weight:600; font-size:14px; margin-bottom:10px; }
+  th,td{ padding:9px 12px; border-bottom:1px solid var(--line); text-align:left; }
+  th{ color:var(--ink-faint); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; }
+  td.num, th.num{ text-align:right; font-family:"IBM Plex Mono",monospace; }
+  tbody tr:last-child td{ border-bottom:none; }
+  .tag{ display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:11px; padding:1px 7px;
+    border-radius:5px; background:var(--surface-2); color:var(--ink-muted); border:1px solid var(--line); }
+  .tag.hot{ background:var(--accent-soft); color:var(--accent-ink); border-color:transparent; }
+
+  .table-grid{ display:grid; grid-template-columns:1fr; gap:28px; }
+  @media (min-width:760px){ .table-grid{ grid-template-columns:1fr; } }
+
+  .tables-wrap{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 24px; box-shadow:var(--shadow); overflow-x:auto; }
+  .tables-wrap + .tables-wrap{ margin-top:20px; }
+
+  footer{ margin-top:64px; padding-top:20px; border-top:1px solid var(--line); font-size:12.5px; color:var(--ink-faint); }
+  footer .files{ font-family:"IBM Plex Mono",monospace; line-height:1.9; margin-top:8px; }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <span class="eyebrow">N64 RDRAM · 8&nbsp;MB, Expansion Pak</span>
+    <h1>Where HackerOoT's 8&nbsp;MB of RAM actually goes</h1>
+    <p class="lede">Vanilla Ocarina of Time capped its usable RAM around <strong>4.3&nbsp;MB</strong>
+      (<code class="mono">0x8044BE80</code>). HackerOoT raises <code class="mono">SYS_CFB_END</code> to
+      <code class="mono">0x80800000</code> — a flat <strong>8&nbsp;MB</strong> — which is also why there's
+      real headroom for something like a persistent ocean scene with per-island collision.</p>
+  </header>
+
+  <section aria-labelledby="h-full">
+    <h2 id="h-full">1. The full address space</h2>
+    <p class="section-sub">Three regions, low address to high. Only the framebuffers and the PlayState
+      arena have exact, config-driven sizes — the boot/code region is whatever the linked ROM produces.</p>
+
+    <figure>
+      <svg viewBox="0 0 760 500" role="img" aria-label="Vertical bar showing N64 RDRAM from 0x80000000 to 0x80800000, split into a static boot/code region of illustrative size, a dynamic system heap of about 5.9 megabytes, and a 300 kilobyte framebuffer region at the top of memory.">
+        <defs>
+          <pattern id="hatchStatic" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+            <rect width="7" height="7" class="fill-static"></rect>
+            <line x1="0" y1="0" x2="0" y2="7" class="stroke-line" stroke-width="1.4"></line>
+          </pattern>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
+          </marker>
+        </defs>
+
+        <!-- address axis -->
+        <text x="4" y="46" class="mono-text txt-muted" font-size="12">0x80000000</text>
+        <text x="4" y="472" class="mono-text txt-muted" font-size="12">0x80800000</text>
+
+        <!-- bar column: x 150 to 430, y 40 to 460 (420px = 8MB) -->
+        <!-- static/boot: illustrative 22% -->
+        <g class="hatch-static">
+          <rect x="150" y="40" width="280" height="92.4" stroke="var(--line-strong)" stroke-width="1"></rect>
+        </g>
+        <text x="440" y="70" class="txt" font-size="13.5" font-weight="600">Boot code · .data · .bss</text>
+        <text x="440" y="88" class="txt-muted" font-size="12">static globals incl. audio heap</text>
+        <text x="440" y="104" class="mono-text txt-faint" font-size="11">size varies by build/version — illustrative</text>
+        <text x="150" y="146" class="mono-text txt-faint" font-size="11">↳ ends at <tspan font-weight="600" fill="var(--ink)">_buffersSegmentEnd</tspan></text>
+
+        <!-- system heap: 74% -->
+        <rect x="150" y="132.4" width="280" height="310.8" class="fill-heap" stroke="var(--accent)" stroke-width="1.4"></rect>
+        <text x="440" y="230" class="txt" font-size="13.5" font-weight="600">System Heap</text>
+        <text x="440" y="248" class="txt-muted" font-size="12">dynamic — SystemArena_Init /</text>
+        <text x="440" y="264" class="txt-muted" font-size="12">Runtime_Init(systemHeapStart, size)</text>
+        <text x="440" y="286" class="mono-text txt-faint" font-size="11">holds one GameState at a time:</text>
+        <text x="440" y="303" class="mono-text txt-faint" font-size="11">Play ≈ 4.83&#8201;MB · menus ≈ 1&#8201;MB</text>
+
+        <!-- vanilla ceiling marker -->
+        <line x1="150" y1="221" x2="430" y2="221" stroke="var(--callout)" stroke-width="1.6" stroke-dasharray="5 4"></line>
+        <text x="150" y="215" class="mono-text" fill="var(--callout)" font-size="11">vanilla ceiling ≈ 0x8044BE80 (4.3&#8201;MB)</text>
+
+        <!-- framebuffers: 3.66% -->
+        <rect x="150" y="443.2" width="280" height="16.8" class="fill-fb" stroke="var(--line-strong)" stroke-width="1"></rect>
+        <text x="440" y="444" class="txt" font-size="13.5" font-weight="600">Framebuffers</text>
+        <text x="440" y="461" class="mono-text txt-faint" font-size="11">2 × 320×240×16bpp = 0x25800 each (300&#8201;KB)</text>
+
+        <!-- bracket connecting system heap to figure 2 -->
+        <path d="M430,133 L452,133 L452,443 L430,443" fill="none" class="stroke-line" stroke-width="1.4" stroke-dasharray="2 4"></path>
+        <text x="620" y="292" text-anchor="middle" class="txt-faint" font-size="12" font-style="italic">↓ zoomed in figure 2</text>
+      </svg>
+      <figcaption>
+        Only one <code>GameState</code> occupies the System Heap at a time (title screen, file select, or
+        gameplay) — <code>PLAY_ALLOC_SIZE</code> is the largest of these, so it sets the heap's effective floor.
+        <code>src/code/main.c</code>, <code>src/code/game.c</code>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="h-play">
+    <h2 id="h-play">2. Inside the PlayState arena</h2>
+    <p class="section-sub">When gameplay starts, one <code class="mono">THA_AllocTailAlign16</code> call
+      carves <code class="mono">PLAY_ALLOC_SIZE</code> (<span class="mono">0x4D4790</span> ≈ 4.83&#8201;MB)
+      out of the System Heap. Everything below is sub-allocated from that one block.</p>
+
+    <figure>
+      <svg viewBox="0 0 760 300" role="img" aria-label="Horizontal stacked bar showing the PlayState arena of 4.83 megabytes divided into the object bank at 2 megabytes, a small collision context of about 45 to 115 kilobytes, variable room double buffers, small misc scene data, and the remainder given to the Zelda actor arena at roughly 2.3 megabytes.">
+        <!-- bar: x 20 to 740 (720px) = 4.83MB (5,064,592 B) → px/byte = 720/5064592 -->
+        <!-- object bank 41.4% = 298px | collision ~2.3%=16px | room buf illustrative 8%=58px | misc 3%=22px | zelda arena remainder 45.3%=326px -->
+        <g transform="translate(20,110)">
+          <rect x="0" y="0" width="298" height="64" class="fill-fixed" stroke="var(--line-strong)" stroke-width="1"><title>Object Bank — 0x200000 (2.00 MB), fixed</title></rect>
+          <rect x="298" y="0" width="16" height="64" class="fill-tunable" stroke="var(--accent-ink)" stroke-width="1"><title>Collision Context — scene-tuned, 0xB798–0x198C8 (45.9–102.2 KB)</title></rect>
+          <g class="hatch-dyna">
+            <rect x="314" y="0" width="58" height="64" stroke="var(--line-strong)" stroke-width="1"><title>Room double-buffers — 2 × largest room's file size, scene-dependent</title></rect>
+          </g>
+          <g class="hatch-dyna">
+            <rect x="372" y="0" width="22" height="64" stroke="var(--line-strong)" stroke-width="1"><title>Misc scene data — skybox, minimap, pause capture</title></rect>
+          </g>
+          <rect x="394" y="0" width="326" height="64" class="fill-dyna" stroke="var(--dyna)" stroke-width="1.4"><title>Zelda Arena — remainder, malloc/free at runtime</title></rect>
+        </g>
+
+        <!-- labels above -->
+        <text x="169" y="60" text-anchor="middle" class="txt" font-size="13" font-weight="600">Object Bank</text>
+        <text x="169" y="78" text-anchor="middle" class="mono-text txt-faint" font-size="11">0x200000 · 2.00&#8201;MB fixed</text>
+
+        <line x1="326" y1="94" x2="326" y2="70" class="stroke-line" stroke-width="1.2" marker-end="url(#arrow)" style="color:var(--callout)"></line>
+        <text x="326" y="46" text-anchor="middle" class="txt" font-size="13" font-weight="600" fill="var(--callout)">Collision Context</text>
+        <text x="326" y="63" text-anchor="middle" class="mono-text" font-size="11" fill="var(--callout)">45.9–102.2&#8201;KB · scene-tuned</text>
+
+        <text x="343" y="222" text-anchor="middle" class="txt" font-size="12.5" font-weight="600">Room buffers</text>
+        <text x="343" y="238" text-anchor="middle" class="mono-text txt-faint" font-size="10.5">variable ×2</text>
+
+        <text x="403" y="222" text-anchor="middle" class="txt" font-size="12.5" font-weight="600">Misc</text>
+        <text x="403" y="238" text-anchor="middle" class="mono-text txt-faint" font-size="10.5">skybox etc.</text>
+
+        <text x="557" y="60" text-anchor="middle" class="txt" font-size="13" font-weight="600">Zelda Arena</text>
+        <text x="557" y="78" text-anchor="middle" class="mono-text txt-faint" font-size="11">remainder · typ. ≈ 1.5–2.5&#8201;MB</text>
+        <text x="557" y="94" text-anchor="middle" class="txt-faint" font-size="11" font-style="italic">actor instances, effects — free at runtime</text>
+      </svg>
+
+      <div class="legend">
+        <div class="legend-item"><span class="swatch" style="background:var(--surface-3)"></span>fixed size (config constant)</div>
+        <div class="legend-item"><span class="swatch" style="background:var(--accent)"></span>tunable per scene (this is the collision budget knob)</div>
+        <div class="legend-item"><span class="swatch" style="background:var(--surface-3);background-image:repeating-linear-gradient(45deg, var(--line-strong) 0 2px, transparent 2px 6px)"></span>scene-dependent, no fixed constant</div>
+        <div class="legend-item"><span class="swatch" style="background:var(--dyna)"></span>dynamic heap (malloc/free)</div>
+      </div>
+
+      <div class="callout-box">
+        <span class="dot"></span>
+        <span>This is where an ocean scene's per-scene collision budget lives — the sliver sized via
+          <code class="mono">BgCheck_TryGetCustomMemsize</code>. Everything to its right (room buffers,
+          misc, Zelda Arena) reshuffles automatically since Zelda Arena always just takes
+          <code class="mono">THA_GetRemaining</code>; only the Object Bank and Collision Context are hard
+          allocations that can starve it if sized too generously.</span>
+      </div>
+
+      <figcaption>
+        <code>src/code/z_scene.c</code> (Object Bank), <code>src/code/z_bgcheck.c</code> (Collision Context),
+        <code>src/code/z_play.c:552–556</code> (Zelda Arena = whatever's left of the THA)
+      </figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="h-tables">
+    <h2 id="h-tables">3. Reference values</h2>
+    <p class="section-sub">Exact constants behind both diagrams — vanilla OoT alongside HackerOoT's
+      already-expanded defaults.</p>
+
+    <div class="tables-wrap">
+      <table>
+        <caption>Top-level allocation constants — <code class="mono" style="font-size:12px">include/config/config_memory.h</code></caption>
+        <thead>
+          <tr><th>Constant</th><th>Governs</th><th class="num">Vanilla</th><th class="num">HackerOoT</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">SYS_CFB_END</td><td>top of usable RAM</td><td class="num">0x8044BE80 · 4.30&#8201;MB</td><td class="num"><span class="tag hot">0x80800000 · 8.00&#8201;MB</span></td></tr>
+          <tr><td class="mono">PLAY_ALLOC_SIZE</td><td>PlayState (gameplay) arena</td><td class="num">0x1D4790 · 1.83&#8201;MB</td><td class="num"><span class="tag hot">0x4D4790 · 4.83&#8201;MB</span></td></tr>
+          <tr><td class="mono">GAMESTATE_ALLOC_SIZE</td><td>menu states (title, file select…)</td><td class="num">0x100000 · 1.00&#8201;MB</td><td class="num">0x100000 · 1.00&#8201;MB</td></tr>
+          <tr><td class="mono">OBJECT_BANK_SIZE</td><td>loaded actor object files</td><td class="num">≈0xFA000 · 0.98&#8201;MB</td><td class="num"><span class="tag hot">0x200000 · 2.00&#8201;MB</span></td></tr>
+          <tr><td class="mono">AUDIO_HEAP_SIZE</td><td>static audio buffer</td><td class="num">0x38000 · 224&#8201;KB</td><td class="num">0x38000 · 224&#8201;KB</td></tr>
+          <tr><td class="mono">GI_ALLOC_SIZE</td><td>get-item model buffer</td><td class="num">0x3008 · 12.0&#8201;KB</td><td class="num"><span class="tag hot">0xB000 · 44.0&#8201;KB</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tables-wrap">
+      <table>
+        <caption>Collision spatial-lookup budget by scene — <code class="mono" style="font-size:12px">BgCheck_TryGetCustomMemsize</code>, <code class="mono" style="font-size:12px">src/code/z_bgcheck.c:1507</code></caption>
+        <thead>
+          <tr><th>Scene</th><th class="num">memSize (hex)</th><th class="num">≈ KB</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Ganon's Tower Collapse Ext.</td><td class="num mono">0x78C8</td><td class="num">30.2</td><td>smallest override</td></tr>
+          <tr><td>Ganondorf Boss</td><td class="num mono">0x84C8</td><td class="num">33.2</td><td></td></tr>
+          <tr><td>Ganon Boss / Chamber of Sages</td><td class="num mono">0x70C8</td><td class="num">28.2</td><td>boxy, few surfaces</td></tr>
+          <tr><td><strong>Hyrule Field</strong></td><td class="num mono">0xB798</td><td class="num">45.9</td><td>biggest outdoor overworld scene — still low</td></tr>
+          <tr><td>"Spot" overworld scenes (default)</td><td class="num mono">0xF000</td><td class="num">60.0</td><td>no explicit override</td></tr>
+          <tr><td>Any scene without an override (default)</td><td class="num mono">0x1CC00</td><td class="num">115.0</td><td>most scenes land here</td></tr>
+          <tr><td>Spirit Temple Boss</td><td class="num mono">0xACC8</td><td class="num">43.2</td><td></td></tr>
+          <tr><td>Spirit Temple</td><td class="num mono">0x16CC8</td><td class="num">91.2</td><td>multi-room dungeon</td></tr>
+          <tr><td><strong>Fire Temple</strong></td><td class="num mono">0x198C8</td><td class="num">102.2</td><td>largest override in the game</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Sizes are computed directly from the constants and code cited above; the boot/code region in figure&nbsp;1
+    is illustrative only — its real size depends on which actors/debug features a given build links in.
+    <div class="files">
+      include/config/config_memory.h<br>
+      src/code/main.c — Main(), Runtime_Init<br>
+      src/code/sys_cfb.c — SysCfb_Init<br>
+      src/code/game.c — GameState_Alloc<br>
+      src/code/z_play.c — Zelda Arena hand-off<br>
+      src/code/z_scene.c — Object_InitContext<br>
+      src/code/z_bgcheck.c — BgCheck_Allocate, BgCheck_TryGetCustomMemsize
+    </div>
+  </footer>
+
+</div>
