@@ -26,6 +26,8 @@ typedef struct TransformWolfos {
     u8 queuedAttack;
     u8 shieldState;
     u8 attackState;
+    u8 sprintTimer;
+    u8 sprintDelayTimer;
 } TransformWolfos;
 
 #endif

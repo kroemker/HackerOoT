@@ -264,6 +264,7 @@ typedef struct Actor {
     /* 0x13C */ AnimatedMatContext animMatCtx;
 #endif
     f32 speedCap;
+    u8 cutsceneFlag;
 } Actor; // size = 0x14C
 
 typedef enum ActorFootIndex {
@@ -827,6 +828,7 @@ void Actor_HandleZTarget(Actor* actor, struct PlayState* play);
 void Actor_SetPlayerLocation(Actor* actor, struct PlayState* play, f32 yOffset);
 void Actor_TriggerDynapolyIfPossible(Actor* actor, struct PlayState* play);
 void Actor_CheckVoidOut(Actor* actor, struct PlayState* play);
-void Actor_CheckExit(Actor* actor, struct PlayState* play);
-
+s32 Actor_HandleExit(Actor* actor, struct PlayState* play);
+s32 Actor_HandleCutscene(Actor* actor, struct PlayState* play, SkelAnime* skelAnime, AnimationHeader* cutsceneAnimation,
+                         void* defaultActionFunc, void* setupActionFunc);
 #endif

@@ -29,7 +29,6 @@ void TransformIk_Destroy(Actor* thisx, PlayState* play);
 void TransformIk_Update(Actor* thisx, PlayState* play);
 void TransformIk_Draw(Actor* thisx, PlayState* play);
 
-void TransformIk_Action_Cutscene(TransformIk* this, PlayState* play);
 void TransformIk_Action_Idle(TransformIk* this, PlayState* play);
 void TransformIk_Action_Walk(TransformIk* this, PlayState* play);
 void TransformIk_Action_Run(TransformIk* this, PlayState* play);
@@ -140,12 +139,7 @@ void TransformIk_SetupAction(TransformIk* this, PlayState* play, TransformIkActi
     this->playedSfx = 0;
     this->axeCollider.elem.atDmgInfo.dmgFlags = DMG_UNBLOCKABLE;
     this->axeCollider.elem.atDmgInfo.damage = 0x40;
-    if (this->actionFunc == TransformIk_Action_Cutscene) {
-        Animation_Change(&this->skelAnime, &object_ik_Anim_00DD50, 0.0f, 0.0f,
-                         Animation_GetLastFrame(&object_ik_Anim_00DD50), ANIMMODE_LOOP, 4.0f);
-        Interface_SetDoAction(play, DO_ACTION_NONE);
-        Interface_LoadActionLabelB(play, DO_ACTION_NONE);
-    } else if (this->actionFunc == TransformIk_Action_Idle) {
+    if (this->actionFunc == TransformIk_Action_Idle) {
         Animation_Change(&this->skelAnime, &object_ik_Anim_00DD50, 0.0f, 0.0f,
                          Animation_GetLastFrame(&object_ik_Anim_00DD50), ANIMMODE_LOOP, 4.0f);
         Interface_SetDoAction(play, DO_ACTION_ATTACK);
@@ -267,11 +261,11 @@ void TransformIk_Action_VerticalAttack(TransformIk* this, PlayState* play) {
 
     if ((this->skelAnime.curFrame > 17.0f) && (this->skelAnime.curFrame < 23.0f)) {
         this->attackState = 1;
-        this->axeCollider.elem.atDmgInfo.dmgFlags = DMG_UNKNOWN_2;
+        this->axeCollider.elem.atDmgInfo.dmgFlags = DMG_STRONG | DMG_SHARP;
         this->axeCollider.elem.atDmgInfo.damage = 0x60;
     } else {
         this->attackState = 0;
-        this->axeCollider.elem.atDmgInfo.dmgFlags = DMG_UNBLOCKABLE;
+        this->axeCollider.elem.atDmgInfo.dmgFlags = DMG_STRONG | DMG_SHARP;
         this->axeCollider.elem.atDmgInfo.damage = 0x40;
     }
 
@@ -373,18 +367,6 @@ void TransformIk_Action_Walk(TransformIk* this, PlayState* play) {
 
     if (((s16)this->skelAnime.curFrame == 0) || ((s16)this->skelAnime.curFrame == 16)) {
         Actor_PlaySfx(&this->actor, NA_SE_EN_IRONNACK_WALK);
-    }
-}
-
-void TransformIk_Action_Cutscene(TransformIk* this, PlayState* play) {
-    Player* player = GET_PLAYER(play);
-
-    SkelAnime_Update(&this->skelAnime);
-
-    Math_StepToF(&this->actor.speed, 0.0f, 0.9f);
-
-    if (player->csAction == PLAYER_CSACTION_NONE) {
-        TransformIk_SetupAction(this, play, TransformIk_Action_Idle);
     }
 }
 
@@ -543,7 +525,10 @@ void TransformIk_Update(Actor* thisx, PlayState* play) {
 
     Actor_TriggerDynapolyIfPossible(&this->actor, play);
     Actor_CheckVoidOut(&this->actor, play);
-    Actor_CheckExit(&this->actor, play);
+    if (Actor_HandleExit(&this->actor, play)) {
+        SkelAnime_Update(&this->skelAnime);
+        return;
+    }
     if (!(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (this->actionFunc != TransformIk_Action_Fall)) {
         TransformIk_SetupAction(this, play, TransformIk_Action_Fall);
     }
@@ -554,11 +539,10 @@ void TransformIk_Update(Actor* thisx, PlayState* play) {
         thisx->gravity = -1.0f;
     }
 
-    if (player->csAction != PLAYER_CSACTION_NONE && this->actionFunc != TransformIk_Action_Cutscene) {
-        TransformIk_SetupAction(this, play, TransformIk_Action_Cutscene);
+    if (!Actor_HandleCutscene(&this->actor, play, &this->skelAnime, &object_ik_Anim_00DD50, TransformIk_Action_Idle,
+                              TransformIk_SetupAction)) {
+        this->actionFunc(this, play);
     }
-
-    this->actionFunc(this, play);
 
     Collider_UpdateCylinder(&this->actor, &this->bodyCollider);
     CollisionCheck_SetOC(play, &play->colChkCtx, &this->bodyCollider.base);

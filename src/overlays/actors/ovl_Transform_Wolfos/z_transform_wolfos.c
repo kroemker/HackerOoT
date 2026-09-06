@@ -28,9 +28,16 @@
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
 
-#define BACKFLIP_SPEED -14.0f
-#define BACKFLIP_DEACCELERATION 0.7f
+#define FLIP_SPEED 14.0f
+#define FLIP_DEACCELERATION 0.7f
 #define JUMP_VERTICAL_SPEED 9.0f
+
+#define SPRINT_FRAMES 60
+#define SPRINT_DELAY_FRAMES 10
+#define SPRINT_SPEED 10.0f
+
+#define FALL_JUMP_SPEED_THRESHOLD 3.0f
+#define JUMP_HEIGHT 7.0f
 
 void TransformWolfos_Init(Actor* thisx, PlayState* play);
 void TransformWolfos_Destroy(Actor* thisx, PlayState* play);
@@ -42,7 +49,7 @@ void TransformWolfos_Action_Run(TransformWolfos* this, PlayState* play);
 void TransformWolfos_Action_Idle(TransformWolfos* this, PlayState* play);
 void TransformWolfos_Action_Attack(TransformWolfos* this, PlayState* play);
 void TransformWolfos_Action_Block(TransformWolfos* this, PlayState* play);
-void TransformWolfos_Action_Backflip(TransformWolfos* this, PlayState* play);
+void TransformWolfos_Action_Flip(TransformWolfos* this, PlayState* play);
 void TransformWolfos_Action_Howl(TransformWolfos* this, PlayState* play);
 
 ActorProfile Transform_Wolfos_Profile = {
@@ -61,8 +68,8 @@ static ColliderJntSphElementInit sClawsColliderElements[] = {
     {
         {
             ELEM_MATERIAL_UNK0,
-            { 0xFFCFFFFF, HIT_SPECIAL_EFFECT_NONE, 0x04 },
-            { 0xFFC3FFFF, HIT_BACKLASH_NONE, 0x00 },
+            { DMG_SHARP, HIT_SPECIAL_EFFECT_NONE, 0x04 },
+            { 0xFFFFFFFF, HIT_BACKLASH_NONE, 0x00 },
             ATELEM_ON | ATELEM_SFX_NORMAL,
             ACELEM_ON,
             OCELEM_NONE,
@@ -72,8 +79,8 @@ static ColliderJntSphElementInit sClawsColliderElements[] = {
     {
         {
             ELEM_MATERIAL_UNK0,
-            { 0xFFCFFFFF, HIT_SPECIAL_EFFECT_NONE, 0x04 },
-            { 0xFFC3FFFF, HIT_BACKLASH_NONE, 0x00 },
+            { DMG_SHARP, HIT_SPECIAL_EFFECT_NONE, 0x04 },
+            { 0xFFFFFFFF, HIT_BACKLASH_NONE, 0x00 },
             ATELEM_ON | ATELEM_SFX_NORMAL,
             ACELEM_ON,
             OCELEM_NONE,
@@ -137,13 +144,21 @@ static ColliderCylinderInit sTailCollider = {
 
 void TransformWolfos_CheckButtonActions(TransformWolfos* this, PlayState* play) {
     if (CHECK_BTN_ALL(play->state.input[0].cur.button, BTN_Z | BTN_A)) {
-        TransformWolfos_SetupAction(this, play, TransformWolfos_Action_Backflip);
+        TransformWolfos_SetupAction(this, play, TransformWolfos_Action_Flip);
     } else if (CHECK_BTN_ALL(play->state.input[0].press.button, BTN_B)) {
         TransformWolfos_SetupAction(this, play, TransformWolfos_Action_Attack);
-    } else if (CHECK_BTN_ALL(play->state.input[0].press.button, BTN_A)) {
-        TransformWolfos_SetupAction(this, play, TransformWolfos_Action_Howl);
     } else if (CHECK_BTN_ALL(play->state.input[0].press.button, BTN_R)) {
         TransformWolfos_SetupAction(this, play, TransformWolfos_Action_Block);
+    }
+}
+
+void TransformWolfos_CheckSprint(TransformWolfos* this, PlayState* play) {
+    if (CHECK_BTN_ALL(play->state.input[0].press.button, BTN_A) && this->sprintDelayTimer == 0 &&
+        this->sprintTimer == 0) {
+        this->sprintTimer = SPRINT_FRAMES;
+        Actor_PlaySfx(&this->actor, NA_SE_EN_WOLFOS_CRY);
+        Interface_SetDoAction(play, DO_ACTION_NONE);
+        Interface_LoadActionLabelB(play, DO_ACTION_ATTACK);
     }
 }
 
@@ -175,9 +190,17 @@ void TransformWolfos_Action_Run(TransformWolfos* this, PlayState* play) {
     Actor_GetMovementSpeedAndYaw(&this->actor, &speedTarget, &yawTarget, 1, 1, play);
 
     this->actor.world.rot.y = this->actor.shape.rot.y = yawTarget;
-    Math_StepToF(&this->actor.speed, speedTarget, 0.9f);
 
-    this->skelAnime.playSpeed = this->actor.speed * 0.175f;
+    if (this->sprintTimer > 0) {
+        Math_StepToF(&this->actor.speed, SPRINT_SPEED, 3.0f);
+        if (DECR(this->sprintTimer) == 0) {
+            this->sprintDelayTimer = SPRINT_DELAY_FRAMES;
+        }
+    } else {
+        Math_StepToF(&this->actor.speed, speedTarget, 0.9f);
+    }
+
+    this->skelAnime.playSpeed = MIN(this->actor.speed * 0.175f, 1.4f);
 
     if (this->actor.speed == 0.0f) {
         TransformWolfos_SetupAction(this, play, TransformWolfos_Action_Idle);
@@ -189,6 +212,7 @@ void TransformWolfos_Action_Run(TransformWolfos* this, PlayState* play) {
     absPlaySpeed = (s32)(f32)ABS(this->skelAnime.playSpeed);
 
     TransformWolfos_CheckButtonActions(this, play);
+    TransformWolfos_CheckSprint(this, play);
 
     if ((prevFrame != (s32)this->skelAnime.curFrame) && (beforeCurFrame <= 0) && ((absPlaySpeed + prevFrame) > 0)) {
         Actor_PlaySfx(&this->actor, NA_SE_EN_WOLFOS_WALK);
@@ -201,6 +225,7 @@ void TransformWolfos_Action_Attack(TransformWolfos* this, PlayState* play) {
         (this->queuedAttack == 0)) {
         this->queuedAttack = 1;
         this->skelAnime.endFrame = Animation_GetLastFrame(&gWolfosSlashingAnim);
+        Interface_LoadActionLabelB(play, DO_ACTION_NONE);
     }
 
     if ((this->skelAnime.curFrame > 9.0f) && (this->skelAnime.curFrame < 12.0f)) {
@@ -234,13 +259,13 @@ void TransformWolfos_Action_Block(TransformWolfos* this, PlayState* play) {
     }
 }
 
-void TransformWolfos_Action_Backflip(TransformWolfos* this, PlayState* play) {
+void TransformWolfos_Action_Flip(TransformWolfos* this, PlayState* play) {
     if (SkelAnime_Update(&this->skelAnime)) {
         this->actor.speed = 0.0f;
         TransformWolfos_SetupAction(this, play, TransformWolfos_Action_Idle);
     }
 
-    Math_ApproachZeroF(&this->actor.speed, 0.2f, BACKFLIP_DEACCELERATION);
+    Math_ApproachZeroF(&this->actor.speed, 0.2f, FLIP_DEACCELERATION);
 }
 
 void TransformWolfos_Action_Howl(TransformWolfos* this, PlayState* play) {
@@ -264,53 +289,69 @@ void TransformWolfos_Action_Fall(TransformWolfos* this, PlayState* play) {
     if (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) {
         TransformWolfos_SetupAction(this, play, TransformWolfos_Action_Idle);
     }
-    Math_SmoothStepToF(&this->actor.speed, 0.0f, 1.0f, 1.0f, 0.0f);
+    Math_ApproachZeroF(&this->actor.speed, 0.2f, 0.6f);
 
     SkelAnime_Update(&this->skelAnime);
-}
-
-void TransformWolfos_Action_Jump(TransformWolfos* this, PlayState* play) {
 }
 
 void TransformWolfos_SetupAction(TransformWolfos* this, PlayState* play, TransformWolfosActionFunc actionFunc) {
     this->actionFunc = actionFunc;
 
-    Interface_SetDoAction(play, DO_ACTION_NONE);
-    Interface_LoadActionLabelB(play, DO_ACTION_ATTACK);
-
     this->attackState = 0;
     this->shieldState = 0;
     this->queuedAttack = 0;
     this->playedSfx = 0;
+    this->sprintTimer = 0;
 
     if (this->actionFunc == TransformWolfos_Action_Idle) {
+        Interface_SetDoAction(play, DO_ACTION_NONE);
+        Interface_LoadActionLabelB(play, DO_ACTION_ATTACK);
         Animation_Change(&this->skelAnime, &gWolfosWaitingAnim, 1.0f, 0.0f, Animation_GetLastFrame(&gWolfosWaitingAnim),
-                         ANIMMODE_LOOP_INTERP, 4.0f);
+                         ANIMMODE_LOOP_INTERP, -4.0f);
     } else if (this->actionFunc == TransformWolfos_Action_Run) {
+        Interface_SetDoAction(play, DO_ACTION_FASTER);
+        Interface_LoadActionLabelB(play, DO_ACTION_ATTACK);
         Animation_Change(&this->skelAnime, &gWolfosRunningAnim, 1.0f, 0.0f, Animation_GetLastFrame(&gWolfosRunningAnim),
                          ANIMMODE_LOOP_INTERP, -4.0f);
     } else if (this->actionFunc == TransformWolfos_Action_Attack) {
+        Interface_SetDoAction(play, DO_ACTION_NONE);
+        Interface_LoadActionLabelB(play, DO_ACTION_ATTACK);
         this->actor.speed = 0.0f;
         Animation_Change(&this->skelAnime, &gWolfosSlashingAnim, 1.0f, 0.0f, 15.0f, ANIMMODE_ONCE_INTERP, -4.0f);
     } else if (this->actionFunc == TransformWolfos_Action_Block) {
+        Interface_SetDoAction(play, DO_ACTION_NONE);
+        Interface_LoadActionLabelB(play, DO_ACTION_NONE);
         this->actor.speed = 0.0f;
         this->shieldState = 1;
         Animation_Change(&this->skelAnime, &gWolfosBlockingAnim, 0.0f, 0.0f,
                          Animation_GetLastFrame(&gWolfosBlockingAnim), ANIMMODE_ONCE_INTERP, -4.0f);
-    } else if (this->actionFunc == TransformWolfos_Action_Backflip) {
-        this->actor.speed = BACKFLIP_SPEED;
+    } else if (this->actionFunc == TransformWolfos_Action_Flip) {
+        Interface_SetDoAction(play, DO_ACTION_NONE);
+        Interface_LoadActionLabelB(play, DO_ACTION_NONE);
+        this->actor.speed = -FLIP_SPEED;
+        Animation_Change(&this->skelAnime, &gWolfosBackflippingAnim, 1.0f, 0.0f,
+                         Animation_GetLastFrame(&gWolfosBackflippingAnim), ANIMMODE_ONCE, -3.0f);
         Actor_PlaySfx(&this->actor, NA_SE_EN_STAL_JUMP);
-        Animation_MorphToPlayOnce(&this->skelAnime, &gWolfosBackflippingAnim, -3.0f);
     } else if (this->actionFunc == TransformWolfos_Action_Howl) {
+        Interface_SetDoAction(play, DO_ACTION_NONE);
+        Interface_LoadActionLabelB(play, DO_ACTION_NONE);
         this->actor.speed = 0.0f;
         Animation_Change(&this->skelAnime, &gWolfosRearingUpFallingOverAnim, 1.0f, 0.0f,
                          Animation_GetLastFrame(&gWolfosRearingUpFallingOverAnim), ANIMMODE_ONCE_INTERP, -4.0f);
     } else if (this->actionFunc == TransformWolfos_Action_GetHit) {
+        Interface_SetDoAction(play, DO_ACTION_NONE);
+        Interface_LoadActionLabelB(play, DO_ACTION_NONE);
         this->actor.speed = 0.0f;
         Animation_MorphToPlayOnce(&this->skelAnime, &gWolfosDamagedAnim, -4.0f);
     } else if (this->actionFunc == TransformWolfos_Action_Fall) {
+        Interface_SetDoAction(play, DO_ACTION_NONE);
+        Interface_LoadActionLabelB(play, DO_ACTION_NONE);
         Animation_Change(&this->skelAnime, &gWolfosRunningAnim, 1.0f, 0.0f, 3.0f, ANIMMODE_ONCE_INTERP, -4.0f);
-    } else if (this->actionFunc == TransformWolfos_Action_Jump) {
+        if (this->actor.speed >= FALL_JUMP_SPEED_THRESHOLD) {
+            this->actor.speed *= 1.2f;
+            this->actor.velocity.y = JUMP_HEIGHT;
+            Actor_PlaySfx(&this->actor, NA_SE_EN_WOLFOS_CRY);
+        }
     }
 }
 
@@ -336,6 +377,9 @@ void TransformWolfos_Init(Actor* thisx, PlayState* play) {
     thisx->speedCap = 10.0f;
 
     this->eyeIndex = 0;
+    this->invincibilityTimer = 0;
+    this->sprintTimer = 0;
+    this->sprintDelayTimer = 0;
     this->actor.speed = GET_PLAYER(play)->actor.speed;
     this->actor.room = -1;
 
@@ -405,7 +449,6 @@ void TransformWolfos_Update(Actor* thisx, PlayState* play) {
 
     TransformWolfos_UpdateCollision(this, play);
 
-    Actor_HandleZTarget(&this->actor, play);
     Actor_MoveXZGravity(&this->actor);
 
     Actor_UpdateBgCheckInfo(play, &this->actor, 32.0f, 30.0f, 60.0f,
@@ -413,15 +456,23 @@ void TransformWolfos_Update(Actor* thisx, PlayState* play) {
                                 UPDBGCHECKINFO_FLAG_4);
     Actor_TriggerDynapolyIfPossible(&this->actor, play);
     Actor_CheckVoidOut(&this->actor, play);
-    Actor_CheckExit(&this->actor, play);
+    if (Actor_HandleExit(&this->actor, play)) {
+        SkelAnime_Update(&this->skelAnime);
+        return;
+    }
+    Actor_HandleZTarget(&this->actor, play);
     TransformWolfos_CheckFalling(this, play);
 
-    this->actionFunc(this, play);
+    if (!Actor_HandleCutscene(&this->actor, play, &this->skelAnime, &gWolfosWaitingAnim, TransformWolfos_Action_Idle,
+                              TransformWolfos_SetupAction)) {
+        this->actionFunc(this, play);
+    }
 
     Collider_UpdateCylinder(&this->actor, &this->bodyColliderCylinder);
     CollisionCheck_SetOC(play, &play->colChkCtx, &this->bodyColliderCylinder.base);
 
     this->invincibilityTimer = DECR(this->invincibilityTimer);
+    this->sprintDelayTimer = DECR(this->sprintDelayTimer);
 
     if ((gSaveContext.save.info.playerData.health > 0) && (this->actor.colorFilterTimer == 0) &&
         (this->invincibilityTimer == 0)) {

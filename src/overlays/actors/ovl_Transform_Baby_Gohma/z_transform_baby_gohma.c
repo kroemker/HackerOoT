@@ -27,7 +27,6 @@ void TransformBabyGohma_Destroy(Actor* thisx, PlayState* play);
 void TransformBabyGohma_Update(Actor* thisx, PlayState* play);
 void TransformBabyGohma_Draw(Actor* thisx, PlayState* play);
 
-void TransformBabyGohma_Action_Cutscene(TransformBabyGohma* this, PlayState* play);
 void TransformBabyGohma_Action_Idle(TransformBabyGohma* this, PlayState* play);
 void TransformBabyGohma_Action_Run(TransformBabyGohma* this, PlayState* play);
 void TransformBabyGohma_Action_PrepareJump(TransformBabyGohma* this, PlayState* play);
@@ -96,12 +95,6 @@ void TransformBabyGohma_SetupAction(TransformBabyGohma* this, PlayState* play,
     this->actionFunc = actionFunc;
 
     this->eyeColorIndex = 1;
-    if (this->actionFunc == TransformBabyGohma_Action_Cutscene) {
-        Animation_Change(&this->skelAnime, &gObjectGolStandAnim, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&gObjectGolStandAnim), ANIMMODE_LOOP, 8.0f);
-        Interface_SetDoAction(play, DO_ACTION_NONE);
-        Interface_LoadActionLabelB(play, DO_ACTION_NONE);
-    }
     if (this->actionFunc == TransformBabyGohma_Action_Idle) {
         Animation_Change(&this->skelAnime, &gObjectGolStandAnim, 1.0f, 0.0f,
                          Animation_GetLastFrame(&gObjectGolStandAnim), ANIMMODE_LOOP, 4.0f);
@@ -171,18 +164,6 @@ void TransformBabyGohma_SpawnWaterRipple(TransformBabyGohma* this, PlayState* pl
         pos.x += (leg * 2 - 1) * Math_SinS(this->actor.world.rot.y + 0x4000) * 17.0f;
         pos.z += (leg * 2 - 1) * Math_CosS(this->actor.world.rot.y + 0x4000) * 17.0f;
         EffectSsGRipple_Spawn(play, &pos, 100, 200, 0);
-    }
-}
-
-void TransformBabyGohma_Action_Cutscene(TransformBabyGohma* this, PlayState* play) {
-    Player* player = GET_PLAYER(play);
-
-    SkelAnime_Update(&this->skelAnime);
-
-    Math_StepToF(&this->actor.speed, 0.0f, 0.9f);
-
-    if (player->csAction == PLAYER_CSACTION_NONE) {
-        TransformBabyGohma_SetupAction(this, play, TransformBabyGohma_Action_Idle);
     }
 }
 
@@ -297,8 +278,8 @@ void TransformBabyGohma_Init(Actor* thisx, PlayState* play) {
     TransformBabyGohma* this = (TransformBabyGohma*)thisx;
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 40.0f);
     Actor_SetScale(&this->actor, 0.01f);
-    SkelAnime_Init(play, &this->skelAnime, &gObjectGolSkel, &gObjectGolStandAnim, this->jointTable,
-                   this->morphTable, GOMA_LIMB_MAX);
+    SkelAnime_Init(play, &this->skelAnime, &gObjectGolSkel, &gObjectGolStandAnim, this->jointTable, this->morphTable,
+                   GOMA_LIMB_MAX);
 
     Collider_InitCylinder(play, &this->attackCol);
     Collider_SetCylinder(play, &this->attackCol, &this->actor, &sAttackCollider);
@@ -407,13 +388,15 @@ void TransformBabyGohma_Update(Actor* thisx, PlayState* play) {
     TransformBabyGohma_UpdateEyeEnvColor(this);
     Actor_TriggerDynapolyIfPossible(&this->actor, play);
     Actor_CheckVoidOut(&this->actor, play);
-    Actor_CheckExit(&this->actor, play);
-
-    if (player->csAction != PLAYER_CSACTION_NONE && this->actionFunc != TransformBabyGohma_Action_Cutscene) {
-        TransformBabyGohma_SetupAction(this, play, TransformBabyGohma_Action_Cutscene);
+    if (Actor_HandleExit(&this->actor, play)) {
+        SkelAnime_Update(&this->skelAnime);
+        return;
     }
 
-    this->actionFunc(this, play);
+    if (!Actor_HandleCutscene(&this->actor, play, &this->skelAnime, &gObjectGolStandAnim,
+                              TransformBabyGohma_Action_Idle, TransformBabyGohma_SetupAction)) {
+        this->actionFunc(this, play);
+    }
 
     Collider_UpdateCylinder(&this->actor, &this->attackCol);
     Collider_UpdateCylinder(&this->actor, &this->bodyCol);

@@ -6510,10 +6510,10 @@ void Actor_CheckVoidOut(Actor* actor, PlayState* play) {
     }
 }
 
-void Actor_CheckExit(Actor* actor, PlayState* play) {
+s32 Actor_HandleExit(Actor* actor, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
-    if (actor->bgCheckFlags & BGCHECKFLAG_GROUND) {
+    if (((player->stateFlags1 & PLAYER_STATE1_0) == 0) && actor->bgCheckFlags & BGCHECKFLAG_GROUND) {
         s32 exitIndex = SurfaceType_GetExitIndex(&play->colCtx, actor->floorPoly, actor->floorBgId);
         if (exitIndex != 0) {
             play->nextEntranceIndex = play->exitList[exitIndex - 1];
@@ -6524,5 +6524,37 @@ void Actor_CheckExit(Actor* actor, PlayState* play) {
             Interface_ChangeHudVisibilityMode(HUD_VISIBILITY_NOTHING_ALT);
             player->stateFlags1 |= PLAYER_STATE1_0 | PLAYER_STATE1_29;
         }
+    }
+
+    return (player->stateFlags1 & PLAYER_STATE1_0) != 0;
+}
+
+typedef void (*SetupActionFunc)(Actor* actor, PlayState* play, void* actionFunc);
+
+s32 Actor_HandleCutscene(Actor* actor, PlayState* play, SkelAnime* skelAnime, AnimationHeader* cutsceneAnimation,
+                         void* defaultActionFunc, void* setupActionFunc) {
+    if (play->csCtx.state == CS_STATE_IDLE) {
+        if (actor->cutsceneFlag) {
+            if (setupActionFunc != NULL) {
+                SetupActionFunc func = (SetupActionFunc)setupActionFunc;
+                func(actor, play, defaultActionFunc);
+            }
+            actor->cutsceneFlag = 0;
+        }
+        return 0;
+    } else {
+        if (!actor->cutsceneFlag) {
+            Animation_Change(skelAnime, cutsceneAnimation, 1.0f, 0.0f, Animation_GetLastFrame(cutsceneAnimation),
+                             ANIMMODE_LOOP, -4.0f);
+            Interface_SetDoAction(play, DO_ACTION_NONE);
+            Interface_LoadActionLabelB(play, DO_ACTION_NONE);
+            actor->cutsceneFlag = 1;
+        }
+
+        SkelAnime_Update(skelAnime);
+
+        Math_StepToF(&actor->speed, 0.0f, 0.9f);
+
+        return 1;
     }
 }

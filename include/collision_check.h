@@ -452,6 +452,16 @@ typedef struct CollisionCheckContext {
 #define DMG_RANGED (DMG_ARROW | DMG_HOOKSHOT | DMG_SLINGSHOT)
 #define DMG_DEFAULT ~(DMG_SHIELD | DMG_MIR_RAY)
 
+// Reworked damage flags
+#define DMG_EXPLOSION   (1 << 3)
+#define DMG_STRONG      (1 << 6)
+#define DMG_SHARP       (1 << 9)
+#define DMG_BURN        (1 << 11)
+#define DMG_FREEZE      (1 << 12)
+#define DMG_BLIND       (1 << 13)
+#define DMG_LASER       (1 << 28)
+#define DMG_ELECTRIC    (1 << 31)
+
 typedef struct DamageTable {
     u8 table[32];
 } DamageTable;

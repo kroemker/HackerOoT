@@ -3949,25 +3949,28 @@ void Interface_Draw(PlayState* play) {
         if (!IS_PAUSED(&play->pauseCtx)) {
             if (gSaveContext.minigameState != 1) {
                 // Carrots rendering if the action corresponds to riding a horse
-                if (interfaceCtx->unk_1EE == 8) {
-                    // Load Carrot Icon
-                    gDPLoadTextureBlock(OVERLAY_DISP++, gCarrotIconTex, G_IM_FMT_RGBA, G_IM_SIZ_32b, 16, 16, 0,
-                                        G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK,
-                                        G_TX_NOLOD, G_TX_NOLOD);
+                if (interfaceCtx->unk_1EE == DO_ACTION_FASTER) {
+                    /*
+                     * @brief ("Carrot icons removed due to wolfos faster text on A button!");
+                     */
+                    // // Load Carrot Icon
+                    // gDPLoadTextureBlock(OVERLAY_DISP++, gCarrotIconTex, G_IM_FMT_RGBA, G_IM_SIZ_32b, 16, 16, 0,
+                    //                     G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK,
+                    //                     G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
 
-                    // Draw 6 carrots
-                    for (svar1 = 1, svar5 = ZREG(14); svar1 < 7; svar1++, svar5 += WIDE_INCR(16, -4)) {
-                        // Carrot Color (based on availability)
-                        if ((interfaceCtx->numHorseBoosts == 0) || (interfaceCtx->numHorseBoosts < svar1)) {
-                            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 0, 150, 255, interfaceCtx->aAlpha);
-                        } else {
-                            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 255, interfaceCtx->aAlpha);
-                        }
+                    // // Draw 6 carrots
+                    // for (svar1 = 1, svar5 = ZREG(14); svar1 < 7; svar1++, svar5 += WIDE_INCR(16, -4)) {
+                    //     // Carrot Color (based on availability)
+                    //     if ((interfaceCtx->numHorseBoosts == 0) || (interfaceCtx->numHorseBoosts < svar1)) {
+                    //         gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 0, 150, 255, interfaceCtx->aAlpha);
+                    //     } else {
+                    //         gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 255, interfaceCtx->aAlpha);
+                    //     }
 
-                        gSPTextureRectangle(OVERLAY_DISP++, WIDE_INCR(svar5, 14) << 2, ZREG(15) << 2,
-                                            WIDE_INCR((svar5 + 16), 10) << 2, (ZREG(15) + 16) << 2, G_TX_RENDERTILE, 0,
-                                            0, WIDE_DIV((1 << 10), WIDE_GET_RATIO), 1 << 10);
-                    }
+                    //     gSPTextureRectangle(OVERLAY_DISP++, WIDE_INCR(svar5, 14) << 2, ZREG(15) << 2,
+                    //                         WIDE_INCR((svar5 + 16), 10) << 2, (ZREG(15) + 16) << 2, G_TX_RENDERTILE,
+                    //                         0, 0, WIDE_DIV((1 << 10), WIDE_GET_RATIO), 1 << 10);
+                    // }
                 }
             } else {
                 // Score for the Horseback Archery
